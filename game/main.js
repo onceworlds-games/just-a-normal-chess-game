@@ -9,7 +9,7 @@ import { createRenderer } from './render.js';
 import { createFx } from './fx.js';
 import { createNet, stubRoom } from './net.js';
 import { startAudio, sfx, setMusic, duck } from './audio.js';
-import { createUI, h, fmtClock, lobbyPanel, seatRow, emptySeat, chessPanel, fillMoves, warPanel, teamRow, selectionIcons, avatarImg } from './ui.js';
+import { createUI, h, fmtClock, lobbyPanel, seatRow, emptySeat, chessPanel, fillMoves, noirLine, warPanel, teamRow, selectionIcons, avatarImg } from './ui.js';
 import { pieceSvg } from './pieces.js';
 import { chessToWorld } from './sim.js';
 
@@ -174,7 +174,7 @@ async function boot() {
     const barH = W < 500 ? 46 : 52;
     const war = state.phase === 'rts';
     let size;
-    if (wide) size = Math.min(W - 360 - 56, H - barH * 2 - 40);
+    if (wide) size = Math.min(W - (H < 520 ? 270 : 360) - 56, H - barH * 2 - (H < 520 ? 16 : 40));
     else size = Math.min(W - 12, H - barH * 2 - (war ? 120 : 200));
     app.style.setProperty('--board', `${Math.max(200, Math.floor(size))}px`);
     app.style.setProperty('--bar', `${barH}px`);
@@ -193,9 +193,10 @@ async function boot() {
   function placeMinimap(wide) {
     const r = ui.refs();
     if (state.phase !== 'rts') return;
-    const target = wide ? r.mapSlot : ui.hudNode;
+    const docked = wide && window.innerHeight >= 520;
+    const target = docked ? r.mapSlot : ui.hudNode;
     if (target && ui.minimap.parentElement !== target) target.append(ui.minimap);
-    ui.minimap.classList.toggle('floating', !wide);
+    ui.minimap.classList.toggle('floating', !docked);
   }
   window.addEventListener('resize', layout);
   ow?.on?.('reserved', layout);
@@ -218,7 +219,8 @@ async function boot() {
     const king = state.net?.world?.pieces.get(state.net.g?.kid);
     cam.tcx = king ? king.x + 0.5 : C.KEEP_X + 4;
     cam.tcy = king ? king.y - 4 : C.KEEP_Y;
-    cam.tscale = Math.max(app.dataset.wide === '1' ? 18 : 26, Math.min(64, Math.min(w, hgt) / (app.dataset.wide === '1' ? 20 : 13)));
+    const roomy = app.dataset.wide === '1' && window.innerHeight >= 520;
+    cam.tscale = Math.max(roomy ? 18 : 24, Math.min(64, Math.min(w, hgt) / (roomy ? 20 : 11)));
     if (snap) cam.snap();
   }
   const clampCam = () => {
@@ -801,6 +803,9 @@ async function boot() {
       }),
     );
     fillMoves(r.list, cd.moves);
+    const [line, mood] = frozen ? ['Finally.', 'hungry'] : noirLine(cd.moves.length);
+    ui.set(r.says, line);
+    r.says.className = `says ${mood}`;
     const lost = state.net.g?.ph === 'lost';
     ui.set(r.status, frozen ? '' : lost ? 'Game over' : cd.pos.t === 'w' ? (solo() ? 'Your move' : 'White to move') : 'Noir is thinking');
     r.status.classList.toggle('thinking', cd.pos.t === 'b' && !lost && !frozen);
@@ -1728,7 +1733,8 @@ async function boot() {
     else if (c >= 5.2 && c < 9.3) target = mix(wide, close, (c - 5.2) / 1.8);
     else if (c >= 9.3) {
       const king = view.world?.pieces.get(g.kid);
-      const army = [king ? king.x + 0.5 : C.KEEP_X + 4, king ? king.y - 5 : C.KEEP_Y - 1, Math.max(14, Math.min(w, hgt) / (app.dataset.wide === '1' ? 22 : 14))];
+      const roomy = app.dataset.wide === '1' && window.innerHeight >= 520;
+      const army = [king ? king.x + 0.5 : C.KEEP_X + 4, king ? king.y - 5 : C.KEEP_Y - 1, Math.max(roomy ? 14 : 22, Math.min(w, hgt) / (roomy ? 22 : 12))];
       target = mix(close, army, (c - 9.3) / 1.2);
     }
     [cam.tcx, cam.tcy, cam.tscale] = target;

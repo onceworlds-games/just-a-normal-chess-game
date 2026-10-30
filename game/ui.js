@@ -184,9 +184,28 @@ export function emptySeat(onInvite, canInvite) {
 
 export function chessPanel(refs, { onResign }) {
   refs.list = h('div', { class: 'moves' });
+  refs.says = h('div', { class: 'says' });
   refs.status = h('div', { class: 'status' });
   refs.resign = h('button', { class: 'btn grey icon-btn', onclick: () => onResign(refs.resign) }, h('span', { html: '<svg width="18" height="18" viewBox="0 0 24 24"><path d="M5 21V4h11l-1 3h5l-2 7h-9l1-3H7v10z" fill="currentColor"/></svg>' }), 'Resign');
-  return h('div', { class: 'pn chess' }, h('div', { class: 'pn-head' }, h('span', { class: 'pn-icon', html: pieceSvg('n', 'w', 26) }), 'Moves'), h('div', { class: 'pn-body scroll' }, refs.list), h('div', { class: 'pn-foot row' }, refs.status, refs.resign));
+  return h(
+    'div',
+    { class: 'pn chess' },
+    h('div', { class: 'pn-head' }, h('span', { class: 'pn-icon', html: pieceSvg('n', 'w', 26) }), 'Moves'),
+    h('div', { class: 'noir-row' }, h('div', { html: NOIR_AVATAR, class: 'noir-av' }), refs.says),
+    h('div', { class: 'pn-body scroll' }, refs.list),
+    h('div', { class: 'pn-foot row' }, refs.status, refs.resign),
+  );
+}
+
+/** What Noir says as the game goes on without a capture. */
+export function noirLine(plies) {
+  const move = Math.floor(plies / 2) + 1;
+  if (move <= 1) return ['Good luck.', ''];
+  if (move <= 3) return ['A normal game. Promise.', ''];
+  if (move <= 5) return ['You can take my pieces, you know.', ''];
+  if (move <= 7) return ['Go on. Take one.', 'uneasy'];
+  if (move <= 9) return ['Take it.', 'uneasy'];
+  return ['TAKE IT.', 'hungry'];
 }
 
 export function fillMoves(list, moves) {

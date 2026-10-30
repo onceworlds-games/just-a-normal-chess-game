@@ -112,9 +112,14 @@ export function scoreMoves(pos, depth, budget = 120000) {
  * Noir's move, or null when it has none. `lure` (0..1): the chance it picks the least bad move that leaves White a
  * capture. `loose` (centipawns): how far from the best move it may wander for variety.
  */
-export function chooseMove(pos, { depth = 3, rng = Math.random, lure = 0, loose = 25 } = {}) {
-  const scored = scoreMoves(pos, depth);
+export function chooseMove(pos, { depth = 3, rng = Math.random, lure = 0, loose = 25, noMate = false } = {}) {
+  let scored = scoreMoves(pos, depth);
   if (!scored.length) return null;
+  // Noir never ends the game: it would rather play with its food.
+  if (noMate) {
+    const kind = scored.filter((r) => r.score < MATE / 2);
+    if (kind.length) scored = kind;
+  }
   if (lure > 0 && rng() < lure) {
     const baits = scored.filter((r) => {
       const replies = pseudoMoves(r.next).filter((w) => w.c !== '.' && !inCheck(makeMove(r.next, w), r.next.t));

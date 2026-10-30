@@ -67,6 +67,7 @@ function noise({ at = 0, dur = 0.1, vol = 0.3, freq = 1200, q = 1, type = 'bandp
   const t = ctx.currentTime + at;
   const src = ctx.createBufferSource();
   src.buffer = noiseBuf;
+  src.loop = true;
   const f = ctx.createBiquadFilter();
   f.type = type;
   f.frequency.setValueAtTime(freq, t);
@@ -244,14 +245,15 @@ export const sfx = {
 // ---------------------------------------------------------------- music
 
 let mode = 'none'; // 'none' | 'calm' | 'war' | 'boss'
+let applied = 'none'; // the mode the music gain was last set for (audio may unlock after a mode was chosen)
 let nextBeat = 0;
 let beat = 0;
 let timer = 0;
 
 export function setMusic(next) {
-  if (next === mode) return;
   mode = next;
-  if (!ok()) return;
+  if (!ok() || applied === mode) return;
+  applied = mode;
   const t = ctx.currentTime;
   const target = { none: 0.0001, calm: 0.45, war: 0.7, boss: 0.8 }[mode] ?? 0.0001;
   musicGain.gain.cancelScheduledValues(t);
@@ -273,6 +275,7 @@ function scheduleMusic() {
   clearInterval(timer);
   timer = setInterval(() => {
     if (!ok()) return;
+    if (applied !== mode) setMusic(mode);
     const bpm = mode === 'boss' ? 132 : 112;
     const step = 60 / bpm / 2; // eighth notes
     if (nextBeat < ctx.currentTime) nextBeat = ctx.currentTime + 0.05;

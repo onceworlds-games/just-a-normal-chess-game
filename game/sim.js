@@ -168,7 +168,7 @@ export class Sim {
     const ch = this.chess;
     const r = this.rng('noir', ch.ply);
     const loose = { casual: 90, normal: 30, hard: 8 }[this.diffKey];
-    const m = chooseMove(ch.pos, { depth: this.diff.depth, rng: r, lure: lureChance(ch.pos.fm), loose });
+    const m = chooseMove(ch.pos, { depth: this.diff.depth, rng: r, lure: lureChance(ch.pos.fm), loose, noMate: true });
     if (!m) {
       this.awaken(-1);
       return;

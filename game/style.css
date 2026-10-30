@@ -203,6 +203,18 @@ button:focus-visible { outline: 2px solid var(--green-hi); outline-offset: 2px; 
 .wait { color: var(--muted); font-weight: 600; font-size: 14px; text-align: center; min-height: 18px; }
 .wait:empty { display: none; }
 
+/* Noir talks */
+.noir-row { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-bottom: 1px solid var(--line); }
+.noir-av .av-tile { width: 32px; height: 32px; }
+.noir-av svg { width: 26px; height: 26px; }
+.says { position: relative; background: #fff; color: #312e2b; font-weight: 700; font-size: 14px; padding: 6px 10px; border-radius: 8px; }
+.says::before { content: ''; position: absolute; left: -5px; top: 50%; margin-top: -5px; border: 5px solid transparent; border-right-color: #fff; border-left: 0; }
+.says.uneasy { color: #7a1d16; }
+.says.hungry { background: #8c1d16; color: #fff; animation: shiver 0.12s infinite alternate; }
+.says.hungry::before { border-right-color: #8c1d16; }
+@keyframes shiver { from { transform: translateX(-1px); } to { transform: translateX(1px); } }
+#app[data-wide='0'] .noir-row { padding: 6px 12px; }
+
 /* moves */
 .moves { font-size: 15px; }
 .mv-row { display: grid; grid-template-columns: 44px 1fr 1fr; align-items: center; height: 30px; padding: 0 10px; }
@@ -355,8 +367,17 @@ button:focus-visible { outline: 2px solid var(--green-hi); outline-offset: 2px; 
 #app[data-wide='0'] .pb-name { font-size: 14px; }
 @media (max-height: 520px) {
   #app[data-wide='1'] { padding: 6px 10px; gap: 10px; }
+  #app[data-wide='1'] #panel { width: 250px; }
+  #app[data-wide='1'] .map-slot, #app[data-wide='1'] .war .team-wrap { display: none; }
+  #app[data-wide='1'] .w-title { font-size: 19px; }
+  #app[data-wide='1'] .bot-av .av-tile { width: 48px; height: 48px; }
+  #app[data-wide='1'] .seat { min-height: 42px; }
+  #app[data-wide='1'] .tools .btn.small, #app[data-wide='1'] .sel-actions .btn.small { height: 32px; font-size: 13px; }
   .pn-head { padding: 8px 12px; font-size: 16px; }
   .btn.big { height: 48px; font-size: 20px; }
   .wave { padding: 8px 12px; }
   .map-slot { padding: 8px 12px 2px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .says.hungry, .banner, .card.result, .toast, .tip { animation: none !important; }
 }
