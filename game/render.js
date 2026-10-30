@@ -270,7 +270,15 @@ export function createRenderer(canvas, fx) {
         }
         if (part.g === 'head') {
           // The crown it took from its king, and the eye.
-          blit(ctx, 'k', 'd', s * 0.12, -s * size * 0.62, s * 0.95, alpha);
+          // Only the crown: the top half of a king, set on the knight's brow.
+          const cs = s * 1.05;
+          const cy = -s * size * 0.44;
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(s * 0.15 - cs * 0.7, cy - cs * 0.6, cs * 1.4, cs * 0.6 + cs * 0.06);
+          ctx.clip();
+          blit(ctx, 'k', 'd', s * 0.15, cy, cs, alpha);
+          ctx.restore();
           const ex = -s * size * 0.04;
           const ey = -s * size * 0.17;
           const pulse = 0.75 + 0.25 * Math.sin(t * 3.1);
@@ -425,7 +433,7 @@ export function createRenderer(canvas, fx) {
 
     // Coordinates on the chess board (letters and numbers in the corner, in the other square's colour).
     if (f.chessOnly || (cine >= 0 && cine < 3.2)) {
-      const fs = Math.max(9, Math.round(s * 0.2));
+      const fs = Math.max(11, Math.round(s * 0.21));
       ctx.font = `700 ${fs}px Figtree, system-ui, sans-serif`;
       for (let i = 0; i < 8; i++) {
         const [px, py] = cam.toScreen(KEEP_X + i, KEEP_Y + 7);

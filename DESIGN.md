@@ -5,6 +5,18 @@ It opens as an ordinary chess game against a bot called Noir, styled like the ch
 White takes a black piece, the black army fuses into **The Endgame**, a dragon built from black chess pieces, and the
 board tears open into a 100×100 battlefield. Chess becomes a real-time siege: ten waves, then the boss.
 
+## What it resembles, and what makes it its own
+It resembles a chess site's play-a-bot screen, on purpose, down to the green board, the clocks and the move list. Then it
+becomes something no chess game does: real-time chess on a battlefield that keeps growing, where every enemy moves on one
+shared 5-second clock and a final boss is literally made of the opponent's pieces. Chess rules stay the language of the
+whole game: legal moves, captures, check, castling, promotion, the king that must not fall.
+
+## The first minute
+A new player sees a normal chess board with Play under a bot that promises a normal game. They play a few moves; Noir
+starts leaving pieces hanging; they take one. The board freezes, the black king's eye turns red, Noir's army flies off
+and fuses into a dragon while the board tears open in every direction. The camera settles on their army with
+"Defend your king" and Wave 1 counting down: one click on a piece shows its moves, red squares show what Black will take.
+
 ## Structure (about an hour)
 1. **Chess** (2-5 min). Full legal chess against Noir. Noir plays properly but starts hanging pieces after a few moves:
    it wants to be taken. White's first capture (or mating Noir) triggers the awakening.

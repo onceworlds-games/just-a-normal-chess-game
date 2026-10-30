@@ -1393,17 +1393,17 @@ export class Sim {
     if (this.t >= (boss.nextHelp ?? 0)) {
       // The board keeps sending help while the dragon stands.
       boss.helps = (boss.helps ?? 0) + 1;
-      if (boss.nextHelp) for (const s of this.slots()) this.dropSquad(s, ['p', 'p', boss.helps % 2 ? 'n' : 'b'].concat(boss.helps % 3 === 0 ? ['r'] : []));
-      boss.nextHelp = this.t + 40;
+      if (boss.nextHelp) for (const s of this.slots()) this.dropSquad(s, ['p', 'p', boss.helps % 2 ? 'n' : 'b'].concat(boss.helps % 2 === 0 ? ['r'] : [], boss.helps % 4 === 0 ? ['q'] : []));
+      boss.nextHelp = this.t + 30;
     }
     if (this.t >= boss.nextSum && boss.grounded) {
       const r = this.rng('bsum', this.seq);
-      const count = Math.round((4 + boss.ph * 2) * this.diff.enemies * C.playerScale(this.players()));
+      const count = Math.round((3 + boss.ph * 2) * this.diff.enemies * C.playerScale(this.players()));
       const pool = ['p', 'p', 'p', 'p', 'n', 'n', 'b', 'b', 'r', 'q'];
       const list = [];
       for (let i = 0; i < count; i++) list.push({ k: r.pick(pool), hp: 1 });
       this.summon(list, { near: [4, 7], wave: 63, tag: 'bsum' });
-      boss.nextSum = this.t + ({ 1: 18, 2: 16, 3: 13 }[boss.ph] ?? 16);
+      boss.nextSum = this.t + ({ 1: 20, 2: 17, 3: 14 }[boss.ph] ?? 17);
     }
   }
 

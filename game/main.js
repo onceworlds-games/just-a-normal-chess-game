@@ -218,7 +218,7 @@ async function boot() {
     const king = state.net?.world?.pieces.get(state.net.g?.kid);
     cam.tcx = king ? king.x + 0.5 : C.KEEP_X + 4;
     cam.tcy = king ? king.y - 4 : C.KEEP_Y;
-    cam.tscale = Math.max(18, Math.min(64, Math.min(w, hgt) / 20));
+    cam.tscale = Math.max(app.dataset.wide === '1' ? 18 : 26, Math.min(64, Math.min(w, hgt) / (app.dataset.wide === '1' ? 20 : 13)));
     if (snap) cam.snap();
   }
   const clampCam = () => {
@@ -1719,7 +1719,7 @@ async function boot() {
     else if (c >= 5.2 && c < 9.3) target = mix(wide, close, (c - 5.2) / 1.8);
     else if (c >= 9.3) {
       const king = view.world?.pieces.get(g.kid);
-      const army = [king ? king.x + 0.5 : C.KEEP_X + 4, king ? king.y - 5 : C.KEEP_Y - 1, Math.max(14, Math.min(w, hgt) / 22)];
+      const army = [king ? king.x + 0.5 : C.KEEP_X + 4, king ? king.y - 5 : C.KEEP_Y - 1, Math.max(14, Math.min(w, hgt) / (app.dataset.wide === '1' ? 22 : 14))];
       target = mix(close, army, (c - 9.3) / 1.2);
     }
     [cam.tcx, cam.tcy, cam.tscale] = target;

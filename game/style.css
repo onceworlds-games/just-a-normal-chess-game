@@ -142,7 +142,7 @@ button:focus-visible { outline: 2px solid var(--green-hi); outline-offset: 2px; 
   background: var(--panel-2);
 }
 .pn-icon { display: inline-flex; }
-.pn-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; flex: 1; min-height: 0; }
+.pn-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; flex: 1; min-height: 0; overflow-y: auto; }
 .pn-body.scroll { overflow-y: auto; padding: 0; }
 .pn-foot { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; background: var(--panel-2); }
 .pn-foot.row { flex-direction: row; align-items: center; justify-content: space-between; }
