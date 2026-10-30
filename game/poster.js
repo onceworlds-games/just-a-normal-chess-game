@@ -48,7 +48,6 @@ export async function runPoster(name) {
   const cam = r.cam;
   const sim = new Sim({ seed: 20261030, diff: 'normal', slots: [0] });
   const frame = { mySlot: 0, solo: true, sel: new Set() };
-  let title = false;
   let split = false;
 
   if (name === 'cover') {
@@ -60,9 +59,8 @@ export async function runPoster(name) {
       if (atk) b.atk.push(atk);
     }
     cam.tcx = 7;
-    cam.tcy = 3.7;
-    cam.tscale = H / 9.4;
-    title = true;
+    cam.tcy = 3.4;
+    cam.tscale = H / 8.6;
   } else if (name === 'action') {
     // Black's turn in full swing: its army moving, pieces falling.
     play(sim, () => sim.phase === 'battle' && sim.turn >= 7 && sim.side === 'b' && sim.bt && sim.bt.moves >= 3);
@@ -101,6 +99,7 @@ export async function runPoster(name) {
   }
   const f = {
     ...frame,
+    bleed: true,
     now: 12.3,
     t,
     world: w,
@@ -111,7 +110,6 @@ export async function runPoster(name) {
   };
   for (let i = 0; i < 4; i++) r.draw({ ...f, now: 12.0 + i * 0.1 });
   const ctx = canvas.getContext('2d');
-  if (title) drawTitle(ctx, W, H);
   if (split) drawChessHalf(ctx, W, H);
   document.body.dataset.ready = '1';
 }
@@ -135,12 +133,12 @@ function drawChessHalf(ctx, W, H) {
       id++;
     });
   });
-  const board = H * 0.98 / 8;
-  r.cam.tcx = KEEP_X + 4 - (W * 0.3 - W / 2) / board;
+  const board = H / 8;
+  r.cam.tcx = KEEP_X + W / 2 / board;
   r.cam.tcy = KEEP_Y + 4;
   r.cam.tscale = board;
   r.cam.snap();
-  r.draw({ now: 1, t: 0, chessOnly: true, world: { pieces, bounds: [KEEP_X, KEEP_Y, KEEP_X + 7, KEEP_Y + 7], terr: null, boss: null }, last: [[KEEP_X + 4, KEEP_Y + 1], [KEEP_X + 4, KEEP_Y + 3]], mySlot: 0, solo: true, sel: new Set() });
+  r.draw({ now: 1, t: 0, chessOnly: true, bleed: true, world: { pieces, bounds: [KEEP_X, KEEP_Y, KEEP_X + 7, KEEP_Y + 7], terr: null, boss: null }, last: [[KEEP_X + 4, KEEP_Y + 1], [KEEP_X + 4, KEEP_Y + 3]], mySlot: 0, solo: true, sel: new Set() });
   // The tear: a jagged diagonal from top to bottom.
   ctx.save();
   ctx.beginPath();
@@ -148,7 +146,7 @@ function drawChessHalf(ctx, W, H) {
   const steps = 14;
   for (let i = 0; i <= steps; i++) {
     const y = (i / steps) * H;
-    const x = W * 0.6 - (i / steps) * W * 0.12 + (i % 2 ? 18 : -18) + Math.sin(i * 2.3) * 10;
+    const x = W * 0.53 - (i / steps) * W * 0.12 + (i % 2 ? 18 : -18) + Math.sin(i * 2.3) * 10;
     ctx.lineTo(x, y);
   }
   ctx.lineTo(0, H);
@@ -168,29 +166,10 @@ function drawChessHalf(ctx, W, H) {
   ctx.beginPath();
   for (let i = 0; i <= steps; i++) {
     const y = (i / steps) * H;
-    const x = W * 0.6 - (i / steps) * W * 0.12 + (i % 2 ? 18 : -18) + Math.sin(i * 2.3) * 10;
+    const x = W * 0.53 - (i / steps) * W * 0.12 + (i % 2 ? 18 : -18) + Math.sin(i * 2.3) * 10;
     i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
   }
   ctx.stroke();
-}
-
-function drawTitle(ctx, W, H) {
-  const band = ctx.createLinearGradient(0, H, 0, H * 0.62);
-  band.addColorStop(0, 'rgba(20,18,16,0.94)');
-  band.addColorStop(0.6, 'rgba(20,18,16,0.6)');
-  band.addColorStop(1, 'rgba(20,18,16,0)');
-  ctx.fillStyle = band;
-  ctx.fillRect(0, H * 0.62, W, H * 0.38);
-  const size = Math.round(W * 0.066);
-  ctx.font = `900 ${size}px Figtree, sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.lineJoin = 'round';
-  ctx.lineWidth = size * 0.16;
-  ctx.strokeStyle = 'rgba(0,0,0,0.85)';
-  ctx.strokeText('Just a Normal Chess Game', W / 2, H * 0.87);
-  ctx.fillStyle = '#ffffff';
-  ctx.fillText('Just a Normal Chess Game', W / 2, H * 0.87);
 }
 
 function disc(ctx, W, H, inner, outer) {

@@ -359,7 +359,7 @@ export function createRenderer(canvas, fx) {
       b = [0, 1, 2, 3].map((i) => Math.round(lerp(keepRect[i], FULL[i], grow)));
     }
 
-    if (!f.chessOnly) {
+    if (!f.chessOnly && !f.bleed) {
       // The battlefield's edge: a soft shadow under the board.
       const [gx0, gy0] = cam.toScreen(b[0], b[1]);
       const [gx1, gy1] = cam.toScreen(b[2] + 1, b[3] + 1);
@@ -368,12 +368,14 @@ export function createRenderer(canvas, fx) {
     }
 
     // Squares.
-    const bx0 = Math.max(vx0, b[0]);
-    const by0 = Math.max(vy0, b[1]);
-    const bx1 = Math.min(vx1, b[2]);
-    const by1 = Math.min(vy1, b[3]);
-    const [ox, oy] = cam.toScreen(b[0], b[1]);
-    const [ex, ey] = cam.toScreen(b[2] + 1, b[3] + 1);
+    // A store picture's board runs past the picture's edges.
+    const sb = f.bleed ? [Math.floor(wx0) - 1, Math.floor(wy0) - 1, Math.ceil(wx1) + 1, Math.ceil(wy1) + 1] : b;
+    const bx0 = f.bleed ? sb[0] : Math.max(vx0, b[0]);
+    const by0 = f.bleed ? sb[1] : Math.max(vy0, b[1]);
+    const bx1 = f.bleed ? sb[2] : Math.min(vx1, b[2]);
+    const by1 = f.bleed ? sb[3] : Math.min(vy1, b[3]);
+    const [ox, oy] = cam.toScreen(sb[0], sb[1]);
+    const [ex, ey] = cam.toScreen(sb[2] + 1, sb[3] + 1);
     ctx.fillStyle = COLORS.light;
     ctx.fillRect(ox, oy, ex - ox, ey - oy);
     ctx.fillStyle = COLORS.dark;
