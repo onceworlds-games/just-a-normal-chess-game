@@ -1196,7 +1196,18 @@ async function boot() {
         } else if (ph === 3) {
           ui.banner('The king is exposed', 'Checkmate it', 'bad');
           sfx.roar();
+          sfx.shatter();
           fx.shake(0.5);
+          const b = world?.boss;
+          if (b) {
+            // The shield around its king breaks.
+            fx.shards(b.x + 0.5, b.y + 0.5, 'rgba(230,80,80,0.9)', 26, 1.6);
+            fx.ring(b.x + 0.5, b.y + 0.5, 'rgba(255,120,120,0.9)', 2.4, 0.5, 0.2);
+          }
+        }
+        if (world?.boss) {
+          fx.ring(world.boss.x + 0.5, world.boss.y + 0.5, 'rgba(220,40,30,0.75)', 14, 1.1, 0.5);
+          fx.ring(world.boss.x + 0.5, world.boss.y + 0.5, 'rgba(255,120,80,0.5)', 9, 0.8, 0.3);
         }
         break;
       }

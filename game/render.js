@@ -164,7 +164,8 @@ export function createRenderer(canvas, fx) {
       y = pivotY + dx * Math.sin(a) + dy * Math.cos(a);
       rot += a;
     };
-    const flap = Math.sin(t * 1.7) * 0.075 + (boss._flap ?? 0);
+    const flying = boss._lift ?? 0;
+    const flap = flying > 0.2 ? Math.sin(t * 9) * 0.32 : Math.sin(t * 1.7) * 0.075 + (boss._flap ?? 0);
     if (part.g === 'lwing' || part.g === 'lfeath') swing(bx - 0.6, by - 0.6, -flap);
     else if (part.g === 'rwing' || part.g === 'rfeath') swing(bx + 1.6, by - 0.6, flap);
     else if (part.g === 'tail' || part.g === 'sting') {
@@ -212,6 +213,7 @@ export function createRenderer(canvas, fx) {
     const s = cam.scale;
     const place = bossPlace(boss, simT);
     const lift = place.h;
+    boss._lift = lift;
     // Shadow.
     const [sx, sy] = cam.toScreen(place.x + 0.5, place.y + 1);
     ctx.save();
@@ -281,7 +283,9 @@ export function createRenderer(canvas, fx) {
           ctx.restore();
           const ex = -s * size * 0.04;
           const ey = -s * size * 0.17;
-          const pulse = 0.75 + 0.25 * Math.sin(t * 3.1);
+          // It blinks: a moment every few seconds when the light goes out.
+          const blink = (t % 5.3) < 0.12 ? 0.08 : 1;
+          const pulse = (0.75 + 0.25 * Math.sin(t * 3.1)) * blink;
           const glow = ctx.createRadialGradient(ex, ey, 0, ex, ey, s * 0.35);
           glow.addColorStop(0, `rgba(255,40,30,${0.9 * pulse * alpha})`);
           glow.addColorStop(0.25, `rgba(255,30,20,${0.45 * pulse * alpha})`);
@@ -290,11 +294,13 @@ export function createRenderer(canvas, fx) {
           ctx.beginPath();
           ctx.arc(ex, ey, s * 0.35, 0, Math.PI * 2);
           ctx.fill();
-          ctx.fillStyle = '#ff2a1f';
+          ctx.fillStyle = blink < 1 ? '#3a0f0d' : '#ff2a1f';
           ctx.beginPath();
           ctx.arc(ex, ey, Math.max(1.5, s * 0.055), 0, Math.PI * 2);
           ctx.fill();
         }
+        // Embers rise from a wounded body.
+        if (!appear && boss.ph >= 2 && part.hp < part.mh * 0.6 && Math.random() < 0.02) fx.sparks(x, y - 0.2, 'rgba(255,120,60,0.9)', 1);
         if (part.g === 'king' && boss.parts.some((p) => p.g === 'torso' && p.hp > 0) && !appear) {
           // Shielded while its heart guard stands.
           const r = s * 0.78;
