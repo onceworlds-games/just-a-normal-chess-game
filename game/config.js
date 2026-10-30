@@ -42,7 +42,7 @@ export const BOSS_INTRO = 8;
 export const DIFFICULTY = {
   casual: { label: 'Casual', enemies: 0.7, armour: 0, boss: 0.7, cunning: 0, depth: 2, attackGap: 1.25, reflex: 0.4 },
   normal: { label: 'Normal', enemies: 1, armour: 0, boss: 1, cunning: 0.5, depth: 3, attackGap: 1, reflex: 1 },
-  hard: { label: 'Hard', enemies: 1.35, armour: 1, boss: 1.35, cunning: 0.75, depth: 3, attackGap: 0.82, reflex: -1 },
+  hard: { label: 'Hard', enemies: 1.2, armour: 1, boss: 1, cunning: 0.75, depth: 3, attackGap: 0.9, reflex: 1.5 },
 };
 export const DIFF_KEYS = ['casual', 'normal', 'hard'];
 

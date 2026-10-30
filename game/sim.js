@@ -1102,6 +1102,21 @@ export class Sim {
     });
     boss.mm = mult;
     boss.ph = 1;
+    // The board rallies: whoever arrives short of an army gets one, so the fight (and its checkpoint) can be won.
+    const want = Math.round(140 * C.playerScale(this.players()));
+    const have = this.whites().length;
+    if (have < want) {
+      const r = this.rng('rally', have);
+      const pool = ['p', 'p', 'p', 'p', 'p', 'n', 'n', 'b', 'b', 'r', 'r', 'q'];
+      const slots = this.slots();
+      const per = Math.ceil((want - have) / slots.length);
+      for (const s of slots) {
+        const kinds = [];
+        for (let i = 0; i < per; i++) kinds.push(r.pick(pool));
+        for (let i = 0; i < kinds.length; i += 8) this.dropSquad(s, kinds.slice(i, i + 8));
+      }
+      this.emit('H', want - have);
+    }
     boss.nextAtk = this.t + 3;
     boss.nextSum = this.t + 12;
     boss.nextDecree = this.t + 20;

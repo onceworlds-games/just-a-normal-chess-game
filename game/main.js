@@ -1246,6 +1246,9 @@ async function boot() {
       case 'F':
         ui.toast('Check blocked');
         break;
+      case 'H':
+        ui.toast(`Reinforcements: ${a[0]} pieces`);
+        break;
       case 'r':
         renderer.resetTweens();
         fx.clear();
