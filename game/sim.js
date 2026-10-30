@@ -1637,6 +1637,16 @@ export class Sim {
   }
 }
 
+let throne = null;
+/** The terrain with only the throne marked (the base every decoded world starts from). */
+function throneMask() {
+  if (!throne) {
+    throne = new Uint8Array(W * H);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (isThrone(x, y)) throne[y * W + x] = T_THRONE;
+  }
+  return throne;
+}
+
 /**
  * Rebuild a battlefield to draw (or to take over as the new host) from room state. Returns a world in the same shape
  * the simulation keeps, plus the record `g`, or null if the record doesn't parse.
@@ -1644,8 +1654,7 @@ export class Sim {
 export function decodeWorld(g, chunks, rocksStr, into = null) {
   if (!g || typeof g !== 'object') return null;
   const w = into ?? makeWorld();
-  w.terr.fill(T_FLOOR);
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (isThrone(x, y)) w.terr[y * W + x] = T_THRONE;
+  w.terr.set(throneMask());
   for (const pos of decodePositions(rocksStr)) w.terr[pos] = T_ROCK;
   w.occ.fill(0);
   if (Array.isArray(g.bd) && g.bd.length === 4 && g.bd.every((v) => Number.isInteger(v) && v >= 0 && v < W)) w.bounds = g.bd.slice();
@@ -1655,6 +1664,9 @@ export function decodeWorld(g, chunks, rocksStr, into = null) {
     if (w.occ[p.y * W + p.x] === 0) w.occ[p.y * W + p.x] = p.id;
   }
   w.boss = null;
+  w.bossOpen = false;
+  w.bossArmed = false;
+  w.kingOpen = false;
   if (g.bo && typeof g.bo === 'object') {
     const boss = makeBoss(clampInt(g.bo.x, 0, W - 1) ?? C.BOSS_X, clampInt(g.bo.y, 0, H - 1) ?? C.BOSS_Y, isNum(g.bo.mm) ? g.bo.mm : 1);
     const hp = decodeHp(g.bo.hp, boss.parts.length);

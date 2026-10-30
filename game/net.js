@@ -345,7 +345,7 @@ export function createNet(ow, room, hooks) {
         if (g.ph !== 'chess' && !(g.ph === 'lost' && g.ch)) {
           const chunks = [];
           for (let i = 0; i < CHUNKS; i++) chunks.push(room.state[`host:p${i}`] ?? '');
-          net.world = decodeWorld(g, chunks, room.state['host:r'] ?? '');
+          net.world = decodeWorld(g, chunks, room.state['host:r'] ?? '', net.world);
           applyPredictions();
         } else net.world = null;
       } else if (!playing()) {
