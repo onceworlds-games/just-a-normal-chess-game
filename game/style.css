@@ -91,8 +91,8 @@ button:focus-visible { outline: 2px solid var(--green-hi); outline-offset: 2px; 
 .av-tile.ghost { background: transparent; border: 2px dashed var(--line); }
 .pb-mid { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 2px; }
 .pb-line { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
-.pb-name { font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pb-rating { color: var(--muted); font-weight: 500; font-size: 14px; }
+.pb-name { font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto; min-width: 3.2em; }
+.pb-rating { color: var(--muted); font-weight: 500; font-size: 14px; white-space: nowrap; overflow: hidden; flex: 0 3 auto; min-width: 0; }
 .pb-extra { display: flex; align-items: center; gap: 1px; min-height: 18px; color: var(--muted); font-size: 13px; }
 .pb-extra .cap { display: inline-flex; margin-right: -6px; }
 .pb-extra .mat, .mat { color: var(--muted); font-weight: 700; font-size: 13px; margin-left: 10px; }

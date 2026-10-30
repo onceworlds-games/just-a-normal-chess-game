@@ -859,6 +859,12 @@ async function boot() {
       r.waveBtn.hidden = true;
       const total = WAVES[wv.n - 1]?.bursts ?? 1;
       r.prog.style.width = `${Math.min(100, ((wv.k ?? 0) / total) * 100)}%`;
+    } else if (g.ph === 'won') {
+      ui.set(r.waveT, 'Checkmate');
+      ui.set(r.waveS, 'The Endgame has fallen');
+      ui.set(r.waveR, '');
+      r.waveBtn.hidden = true;
+      r.prog.style.width = '0%';
     } else if (wv.st === 'bossintro' || wv.st === 'boss') {
       ui.set(r.waveT, 'The Endgame');
       ui.set(r.waveS, boss ? (boss.ph >= 3 ? 'Phase 3 · the king is exposed' : boss.ph === 2 ? 'Phase 2' : wv.st === 'bossintro' ? 'awakens' : 'Phase 1') : '');
@@ -938,7 +944,7 @@ async function boot() {
           top.extra.replaceChildren(h('span', { class: 'pb-sub' }, wv.st === 'fight' ? `Wave ${wv.n} of ${WAVE_COUNT}` : wv.st === 'break' ? `Wave ${wv.n + 1} next` : 'Awakening'));
         }
       }
-      if (state.hpBar && boss) state.hpBar.firstChild.style.width = `${Math.max(0, integrity(boss)) * 100}%`;
+      if (state.hpBar && boss) state.hpBar.firstChild.style.width = `${boss.dead ? 0 : Math.max(0, integrity(boss)) * 100}%`;
       if (state.hpBar && boss) state.hpBar.classList.toggle('exposed', kingExposed(boss));
       // Black's clock counts down to its next move.
       const left = Math.max(0, (g.nt ?? 0) - t);
@@ -957,7 +963,7 @@ async function boot() {
         bot.extra.dataset.key = ek;
         bot.extra.replaceChildren(h('span', { class: 'mat' }, `+${mat}`));
       }
-      ui.set(bot.clockT, runClock(t));
+      ui.set(bot.clockT, runClock(g.res && typeof g.res.t === 'number' ? g.res.t : t));
       bot.clock.classList.add('run');
       bot.clock.classList.remove('low');
       return;
