@@ -4,14 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <title>Just a Normal Chess Game</title>
-<style>
-html,body{margin:0;height:100%;background:#302e2b;display:grid;place-items:center}
-.b{display:grid;grid-template-columns:repeat(8,1fr);width:min(90vw,90vh);aspect-ratio:1}
-.b i{display:block}.b i:nth-child(16n+1),.b i:nth-child(16n+3),.b i:nth-child(16n+5),.b i:nth-child(16n+7),.b i:nth-child(16n+10),.b i:nth-child(16n+12),.b i:nth-child(16n+14),.b i:nth-child(16n+16){background:#ebecd0}
-.b i{background:#779556}
-</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
 </head>
-<body><div class="b" id="b"></div>
-<script>for(let i=0;i<64;i++)document.getElementById('b').appendChild(document.createElement('i'))</script>
+<body>
+<div id="app" data-phase="lobby" data-wide="1">
+  <section id="stage">
+    <div class="pbar top" id="barTop"></div>
+    <div id="boardBox"><canvas id="cv"></canvas><div id="hud"></div></div>
+    <div class="pbar bottom" id="barBot"></div>
+  </section>
+  <aside id="panel"></aside>
+</div>
+<div id="modal" hidden></div>
+<script type="module" src="main.js"></script>
 </body>
 </html>
