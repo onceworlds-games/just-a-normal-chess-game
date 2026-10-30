@@ -10,7 +10,8 @@ let started = false;
 
 export function startAudio() {
   if (started) {
-    if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
+    // iPhones can leave the context 'interrupted' after a call or a lock: any tap brings it back.
+    if (ctx && ctx.state !== 'running') ctx.resume().catch(() => {});
     return;
   }
   const AC = window.AudioContext || window.webkitAudioContext;
@@ -35,7 +36,7 @@ export function startAudio() {
   noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
   const d = noiseBuf.getChannelData(0);
   for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-  if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+  if (ctx.state !== 'running') ctx.resume().catch(() => {});
   scheduleMusic();
 }
 

@@ -12,6 +12,7 @@ function hub() {
   function makeRoom(id) {
     const handlers = {};
     const me = { id, name: id.toUpperCase(), ready: false, connected: true };
+    shared.ready ??= {};
     const room = {
       me,
       get players() {
@@ -30,9 +31,14 @@ function hub() {
         return shared.match;
       },
       get spectators() {
-        return [];
+        // Like the SDK: player objects, the connected players outside the match.
+        if (shared.match.phase !== 'playing') return [];
+        return rooms.map((r) => r.me).filter((p) => !shared.match.participants.includes(p.id));
       },
-      canStart: true,
+      get canStart() {
+        // Like the SDK: everyone but the host has readied.
+        return rooms.every((r) => r.me.id === shared.host || shared.ready[r.me.id]);
+      },
       on(ev, fn) {
         (handlers[ev] ??= []).push(fn);
       },
@@ -48,9 +54,17 @@ function hub() {
         const copy = JSON.parse(JSON.stringify(data));
         for (const r of rooms) if (r !== room && (!opts?.to || opts.to === r.me.id)) r.emit('message', copy, me, 0, 0);
       },
-      setReady() {},
-      clearReady() {},
-      admit() {},
+      setReady(on) {
+        shared.ready[id] = !!on;
+        me.ready = !!on;
+      },
+      clearReady() {
+        for (const k of Object.keys(shared.ready)) shared.ready[k] = false;
+      },
+      admit(ids) {
+        shared.match.participants = [...shared.match.participants, ...ids];
+        shared.admitted = (shared.admitted ?? []).concat(ids);
+      },
       startMatch() {
         shared.match = { phase: 'playing', n: 1, id: 'm1', seed: 4242, participants: rooms.map((r) => r.me.id) };
         for (const r of rooms) r.emit('matchstart', shared.match);
@@ -71,7 +85,12 @@ test('a friend sees the host battle and moves their own pieces through it', asyn
   const hooks = { loadRun: async () => null, saveRun: () => {} };
   const a = createNet(null, ra, hooks);
   const b = createNet(null, rb, hooks);
-  ra.startMatch();
+  // The friend readies; the host's Play (which writes its lobby choices first) must still start the match.
+  assert.equal(a.start(), false, 'not before the friend is ready');
+  rb.setReady(true);
+  a.setLobby({ resume: false });
+  assert.ok(ra.canStart, 'Play does not un-ready the friend');
+  assert.ok(a.start());
   await new Promise((r) => setTimeout(r, 0));
   a.update(0.05);
   assert.ok(a.sim, 'the host runs the game');
@@ -120,12 +139,47 @@ test('a friend sees the host battle and moves their own pieces through it', asyn
   b.send({ t: 'mv', id: hostPiece.id, x: hm.x, y: hm.y });
   assert.notEqual(a.sim.world.pieces.get(hostPiece.id).x * 1000 + a.sim.world.pieces.get(hostPiece.id).y, hm.x * 1000 + hm.y);
   // The host leaves: the friend takes over from the room's record and the battle goes on.
+  a.update(0.25);
   const before = a.sim.world.pieces.size;
+  const seqBefore = a.sim.seq;
   h.shared.host = 'b';
   rb.emit('host', 'b');
   b.update(0.05);
   assert.ok(b.sim, 'the friend is the host now');
   assert.equal(b.sim.world.pieces.size, before);
+  assert.ok(b.sim.seq >= seqBefore, 'event numbers carry on');
+  assert.ok(b.sim.ck && b.sim.ck.n >= 2, 'the checkpoint came along');
   for (let i = 0; i < 400; i++) b.update(0.05);
   assert.equal(b.sim.phase, 'rts');
+  // A lost king retries the wave, not the opening.
+  const n = b.sim.wave.n;
+  b.sim.kill(b.sim.world.pieces.get(b.sim.kingId), null);
+  assert.ok(b.sim.retry());
+  assert.equal(b.sim.phase, 'rts');
+  assert.equal(b.sim.wave.n, n);
+});
+
+test('a friend who arrives mid-run is seated at the next wave break', async () => {
+  const h = hub();
+  const ra = h.makeRoom('a');
+  const hooks = { loadRun: async () => null, saveRun: () => {} };
+  const a = createNet(null, ra, hooks);
+  a.start();
+  await new Promise((r) => setTimeout(r, 0));
+  a.update(0.05);
+  const pilot = createAutopilot(a.sim, 0, { seed: 4 });
+  for (let i = 0; i < 20000 && !(a.sim.phase === 'rts' && a.sim.wave.st === 'fight'); i++) {
+    pilot();
+    a.update(0.05);
+  }
+  const rc = h.makeRoom('c');
+  createNet(null, rc, hooks);
+  assert.ok(!('c' in a.slots));
+  for (let i = 0; i < 40000 && !(a.sim.wave.st === 'break' && 'c' in a.slots); i++) {
+    pilot();
+    a.update(0.05);
+  }
+  assert.equal(a.slots.c, 1, 'seated at the break');
+  assert.deepEqual(h.shared.admitted, ['c']);
+  assert.ok([...a.sim.world.pieces.values()].some((p) => p.s === 'w' && p.o === 1), 'with a squad of their own');
 });

@@ -331,6 +331,8 @@ export class Sim {
     const added = [];
     for (let s = 0; s < C.MAX_SLOTS; s++) if (next[s] && !this.active[s]) added.push(s);
     this.active = next;
+    // Only a lone player pauses: with a friend here the game goes on.
+    if (this.players() > 1) this.paused = false;
     if (this.phase === 'chess') {
       // Orphaned files stay movable by anyone (ownerOk); nothing to move.
       return;
@@ -1529,7 +1531,20 @@ export class Sim {
     this.result = null;
     this.awake = this.awake ?? { t0: -99, gh: [], cap: [C.KEEP_X + 3, C.KEEP_Y + 3] };
     this.ck = ck;
+    this.rebalance();
     return true;
+  }
+
+  /** When a player holds no pieces (a run continued with more friends than it was saved with), share the army out. */
+  rebalance() {
+    const slots = this.slots();
+    if (slots.length < 2) return;
+    const held = new Map(slots.map((s) => [s, 0]));
+    for (const p of this.world.pieces.values()) if (p.s === 'w' && held.has(p.o)) held.set(p.o, held.get(p.o) + 1);
+    if (![...held.values()].some((n) => n === 0)) return;
+    const whites = [...this.world.pieces.values()].filter((p) => p.s === 'w' && p.id !== this.kingId).sort((a, b) => a.id - b.id);
+    for (const p of whites) p.o = -1;
+    for (const p of whites) p.o = this.ownerFor(p);
   }
 
   retry() {
@@ -1603,6 +1618,7 @@ export class Sim {
       seed: this.seed,
       diff: this.diffKey,
       sl: this.slots(),
+      sq: this.seq,
       ev: this.recentEvents(),
       res: this.result,
       st: { re: this.stats.retries },
@@ -1690,11 +1706,14 @@ export function decodeWorld(g, chunks, rocksStr, into = null) {
 }
 
 /** A new host carries on from the room's record. */
-Sim.fromRoom = function fromRoom(g, chunks, rocksStr, slots) {
+Sim.fromRoom = function fromRoom(g, chunks, rocksStr, slots, ck = null) {
   if (!g || typeof g !== 'object' || !isNum(g.seed)) return null;
   const sim = new Sim({ seed: g.seed, diff: g.diff, slots });
   sim.t = isNum(g.t) ? g.t : 0;
-  sim.seq = Array.isArray(g.ev) && g.ev.length ? Math.max(...g.ev.map((e) => (Array.isArray(e) && isNum(e[0]) ? e[0] : 0))) : 0;
+  // Event numbers carry on from the old host's, so every page keeps hearing them.
+  const lastEv = Array.isArray(g.ev) && g.ev.length ? Math.max(...g.ev.map((e) => (Array.isArray(e) && isNum(e[0]) ? e[0] : 0))) : 0;
+  sim.seq = Math.max(lastEv, isNum(g.sq) ? g.sq : 0);
+  if (ck && Array.isArray(ck.pcs) && isNum(ck.t)) sim.ck = ck;
   sim.ev = Array.isArray(g.ev) ? g.ev.slice(-MAX_EVENTS) : [];
   sim.evT = sim.ev.map(() => sim.t - 10);
   sim.stats.retries = isNum(g.st?.re) ? g.st.re : 0;

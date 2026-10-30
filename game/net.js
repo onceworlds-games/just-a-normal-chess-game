@@ -125,8 +125,12 @@ export function createNet(ow, room, hooks) {
 
   net.setLobby = (patch) => {
     if (!room.isHost) return;
-    room.setState('host:lobby', { ...net.lobby(), ...patch });
-    room.clearReady?.();
+    const before = net.lobby();
+    const next = { ...before, ...patch };
+    if (next.diff === before.diff && next.resume === before.resume) return;
+    room.setState('host:lobby', next);
+    // Friends ready up again when the difficulty changes, so they see it before they agree.
+    if (next.diff !== before.diff) room.clearReady?.();
   };
 
   // ---------------------------------------------------------------- starting and adopting
@@ -134,7 +138,7 @@ export function createNet(ow, room, hooks) {
   net.start = () => {
     if (!room.isHost || room.match.phase !== 'lobby') return false;
     if (!room.canStart) return false;
-    room.startMatch({ countdown: 0 });
+    room.startMatch({ countdown: 0, open: true });
     return true;
   };
 
@@ -156,13 +160,26 @@ export function createNet(ow, room, hooks) {
     if (!sim) sim = new Sim({ seed: (match.seed >>> 0) || 1, diff: lobby.diff, slots });
     if (room.match.id !== match.id || !room.isHost) return;
     net.sim = sim;
-    for (let i = 0; i < CHUNKS; i++) room.setState(`host:p${i}`, null);
+    for (let i = 0; i < CHUNKS; i++) {
+      room.setState(`host:p${i}`, null);
+      room.setState(`host:ck${i}`, null);
+    }
     room.setState('host:r', null);
+    room.setState('host:ckm', null);
+    net.roomCk = -1;
     net.lastPub = [];
     net.lastRocks = null;
     writeSlots();
     publish(true);
     hooks.onSimStart?.(sim);
+  }
+
+  function readCheckpoint() {
+    const meta = room.state['host:ckm'];
+    if (!meta || typeof meta !== 'object' || meta.mid !== matchId()) return null;
+    const pcs = [];
+    for (let i = 0; i < CHUNKS; i++) pcs.push(typeof room.state[`host:ck${i}`] === 'string' ? room.state[`host:ck${i}`] : '');
+    return { ...meta, pcs };
   }
 
   /** Take over as host from what the room holds (the old host left), or start a new run. */
@@ -174,7 +191,7 @@ export function createNet(ow, room, hooks) {
     if (g && g.mid === matchId()) {
       const chunks = [];
       for (let i = 0; i < CHUNKS; i++) chunks.push(room.state[`host:p${i}`] ?? '');
-      const sim = Sim.fromRoom(g, chunks, room.state['host:r'] ?? '', activeSlotList().length ? activeSlotList() : [0]);
+      const sim = Sim.fromRoom(g, chunks, room.state['host:r'] ?? '', activeSlotList().length ? activeSlotList() : [0], readCheckpoint());
       if (sim) {
         net.sim = sim;
         net.simMid = matchId();
@@ -220,6 +237,13 @@ export function createNet(ow, room, hooks) {
       net.lastRocks = e.r;
     }
     net.g = e.g;
+    // The checkpoint lives in room state too, so a new host (or this page after a reload) can still retry from it.
+    if (sim.ck && sim.ck.t !== net.roomCk) {
+      net.roomCk = sim.ck.t;
+      const { pcs, ...meta } = sim.ck;
+      room.setState('host:ckm', { mid: matchId(), ...meta });
+      pcs.forEach((chunk, i) => room.setState(`host:ck${i}`, chunk));
+    }
     // Checkpoints go to the host's save, so the run can be picked up another day.
     if (sim.ck && sim.ck.t !== net.savedCk && hooks.saveRun) {
       net.savedCk = sim.ck.t;
@@ -289,27 +313,28 @@ export function createNet(ow, room, hooks) {
   });
   for (const ev of ['join', 'ready', 'rename', 'match', 'away', 'back', 'leave', 'open', 'error']) room.on(ev, () => hooks.onRoster?.());
 
-  /** At a wave break the host seats friends who arrived mid-run. */
+  /** At a wave break the host seats friends who arrived mid-run, and players who came back after their seat was let go. */
   function admitLate() {
     const sim = net.sim;
     if (!sim || sim.phase !== 'rts' || sim.wave.st !== 'break') return;
-    const waiting = (room.spectators ?? []).filter((id) => {
-      const p = room.players.get(id);
-      return p && p.connected !== false && !(id in net.slots);
-    });
-    if (!waiting.length) return;
+    const idOf = (p) => (typeof p === 'string' ? p : p?.id);
+    const watching = new Set((room.spectators ?? []).map(idOf));
+    const online = [...room.players.values()].filter((p) => p && p.connected !== false && !(p.id in net.slots));
+    if (!online.length) return;
     const used = new Set(Object.values(net.slots));
     const admitted = [];
-    for (const id of waiting) {
+    let changed = false;
+    for (const p of online) {
       let s = 0;
       while (used.has(s) && s < MAX_SLOTS) s++;
       if (s >= MAX_SLOTS) break;
       used.add(s);
-      net.slots[id] = s;
-      admitted.push(id);
+      net.slots[p.id] = s;
+      changed = true;
+      if (watching.has(p.id)) admitted.push(p.id);
     }
-    if (!admitted.length) return;
-    room.admit(admitted);
+    if (!changed) return;
+    if (admitted.length) room.admit(admitted);
     sim.setSlots(activeSlotList());
     writeSlots();
   }

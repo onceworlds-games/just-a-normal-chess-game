@@ -151,6 +151,7 @@ async function boot() {
       onSimStart: () => {},
     });
     room.on('close', (reason) => {
+      state.closed = true;
       const msg = { kicked: 'You were removed', replaced: 'Playing in another tab', disconnected: 'Disconnected' }[reason] ?? 'Disconnected';
       ui.modal(`close-${reason}`, () =>
         h('div', { class: 'card result' }, h('div', { class: 'r-head lost' }, h('div', { class: 'r-title' }, msg)), h('div', { class: 'r-foot' }, h('button', { class: 'btn green big', onclick: rejoin }, reason === 'replaced' ? 'Play here' : 'Rejoin'))),
@@ -161,6 +162,7 @@ async function boot() {
     refreshPanel(true);
   }
   async function rejoin() {
+    state.closed = false;
     ui.modal(null);
     attach(await joinRoom());
   }
@@ -347,6 +349,7 @@ async function boot() {
     return [Math.floor(x), Math.floor(y)];
   };
 
+  document.addEventListener('pointerdown', () => startAudio(), { passive: true });
   canvas.addEventListener('contextmenu', (e) => e.preventDefault());
   canvas.addEventListener('pointerdown', (e) => {
     startAudio();
@@ -1549,7 +1552,9 @@ async function boot() {
         buildWar(view);
       }
       updateBars({ g: g ?? {}, t, world: view.world, hold: state.holdChess && !!state.lastChess });
-      if (g && state.phase !== 'lobby') results(view);
+      if (state.closed) {
+        // The room closed: its card (and its Rejoin) stays until the player acts.
+      } else if (g && state.phase !== 'lobby') results(view);
       else ui.modal(null);
     } catch (err) {
       console.error(err);
