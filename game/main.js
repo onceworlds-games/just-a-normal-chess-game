@@ -16,6 +16,23 @@ import { chessToWorld } from './sim.js';
 const ow = window.onceworlds;
 const params = new URLSearchParams(location.search);
 
+// ?debug (only on a page outside Onceworlds): errors printed on screen, for browsers whose console can't be seen.
+if (!ow && params.has('debug')) {
+  const pre = document.createElement('pre');
+  pre.style.cssText = 'position:fixed;left:0;right:0;bottom:0;max-height:40%;overflow:auto;margin:0;padding:6px;font:11px monospace;background:rgba(120,0,0,.85);color:#fff;z-index:99;white-space:pre-wrap';
+  const say = (t) => {
+    if (!pre.isConnected) document.body.append(pre);
+    pre.textContent += `${t}\n`;
+  };
+  window.addEventListener('error', (e) => say(`error: ${e.message} @ ${e.filename}:${e.lineno}`));
+  window.addEventListener('unhandledrejection', (e) => say(`rejection: ${e.reason && (e.reason.stack || e.reason)}`));
+  const orig = console.error;
+  console.error = (...a) => {
+    say(`console.error: ${a.map((x) => (x && x.stack) || x).join(' ')}`);
+    orig.apply(console, a);
+  };
+}
+
 if (params.has('poster')) import('./poster.js').then((m) => m.runPoster(params.get('poster')));
 else boot().catch((err) => {
   console.error(err);
