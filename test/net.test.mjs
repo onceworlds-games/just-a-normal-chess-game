@@ -105,7 +105,7 @@ test('a friend sees the host battle and moves their own pieces through it', asyn
   // Play on to the battlefield with both pilots acting on the host's simulation.
   const pa = createAutopilot(a.sim, 0, { seed: 1 });
   const pb = createAutopilot(a.sim, 1, { seed: 2 });
-  for (let i = 0; i < 20 * 60 * 3 && !(a.sim.phase === 'rts' && a.sim.wave.n >= 2); i++) {
+  for (let i = 0; i < 20 * 60 * 3 && !(a.sim.phase === 'battle' && a.sim.turn >= 3 && a.sim.side === 'w'); i++) {
     pa();
     pb();
     a.update(0.05);
@@ -113,7 +113,7 @@ test('a friend sees the host battle and moves their own pieces through it', asyn
   }
   a.update(0.25);
   b.update(0.05);
-  assert.equal(b.g.ph, 'rts');
+  assert.equal(b.g.ph, 'battle');
   const hostWorld = a.sim.world;
   const view = b.world;
   assert.ok(view && view.pieces.size > 20);
@@ -123,7 +123,7 @@ test('a friend sees the host battle and moves their own pieces through it', asyn
     assert.ok(q && q.x === p.x && q.y === p.y && q.k === p.k && q.o === p.o, `piece ${p.id}`);
   }
   // The friend moves one of their pieces with a legal move, as their page would.
-  const mine = [...view.pieces.values()].find((p) => p.s === 'w' && p.o === 1 && active(p) && a.sim.t >= p.cd && movesOf(view, p).some((m) => m.o === 0));
+  const mine = [...view.pieces.values()].find((p) => p.s === 'w' && p.o === 1 && active(p) && !(p.st & 2) && movesOf(view, p).some((m) => m.o === 0));
   assert.ok(mine, 'the friend has a ready piece');
   const m = movesOf(view, mine).find((mv) => mv.o === 0);
   b.send({ t: 'mv', id: mine.id, x: m.x, y: m.y });
@@ -134,7 +134,7 @@ test('a friend sees the host battle and moves their own pieces through it', asyn
   b.update(0.01);
   assert.equal(b.world.pieces.get(mine.id).x, m.x);
   // The friend can't move the host's pieces.
-  const hostPiece = [...view.pieces.values()].find((p) => p.s === 'w' && p.o === 0 && active(p) && movesOf(view, p).some((mv) => mv.o === 0));
+  const hostPiece = [...view.pieces.values()].find((p) => p.s === 'w' && p.o === 0 && active(p) && !(p.st & 2) && movesOf(view, p).some((mv) => mv.o === 0));
   const hm = movesOf(view, hostPiece).find((mv) => mv.o === 0);
   b.send({ t: 'mv', id: hostPiece.id, x: hm.x, y: hm.y });
   assert.notEqual(a.sim.world.pieces.get(hostPiece.id).x * 1000 + a.sim.world.pieces.get(hostPiece.id).y, hm.x * 1000 + hm.y);
@@ -148,15 +148,15 @@ test('a friend sees the host battle and moves their own pieces through it', asyn
   assert.ok(b.sim, 'the friend is the host now');
   assert.equal(b.sim.world.pieces.size, before);
   assert.ok(b.sim.seq >= seqBefore, 'event numbers carry on');
-  assert.ok(b.sim.ck && b.sim.ck.n >= 2, 'the checkpoint came along');
+  assert.ok(b.sim.ck && b.sim.ck.turn >= 1, 'the checkpoint came along');
   for (let i = 0; i < 400; i++) b.update(0.05);
-  assert.equal(b.sim.phase, 'rts');
-  // A lost king retries the wave, not the opening.
-  const n = b.sim.wave.n;
+  assert.equal(b.sim.phase, 'battle');
+  // A fallen king retries from the checkpoint, not the opening.
+  const ckTurn = b.sim.ck.turn;
   b.sim.kill(b.sim.world.pieces.get(b.sim.kingId), null);
   assert.ok(b.sim.retry());
-  assert.equal(b.sim.phase, 'rts');
-  assert.equal(b.sim.wave.n, n);
+  assert.equal(b.sim.phase, 'battle');
+  assert.equal(b.sim.turn, ckTurn);
 });
 
 test('a friend who arrives mid-run is seated at the next wave break', async () => {
@@ -168,18 +168,18 @@ test('a friend who arrives mid-run is seated at the next wave break', async () =
   await new Promise((r) => setTimeout(r, 0));
   a.update(0.05);
   const pilot = createAutopilot(a.sim, 0, { seed: 4 });
-  for (let i = 0; i < 20000 && !(a.sim.phase === 'rts' && a.sim.wave.st === 'fight'); i++) {
+  for (let i = 0; i < 20000 && !(a.sim.phase === 'battle' && a.sim.turn >= 2); i++) {
     pilot();
     a.update(0.05);
   }
   const rc = h.makeRoom('c');
   createNet(null, rc, hooks);
   assert.ok(!('c' in a.slots));
-  for (let i = 0; i < 40000 && !(a.sim.wave.st === 'break' && 'c' in a.slots); i++) {
+  for (let i = 0; i < 40000 && !('c' in a.slots); i++) {
     pilot();
     a.update(0.05);
   }
-  assert.equal(a.slots.c, 1, 'seated at the break');
+  assert.equal(a.slots.c, 1, 'seated on White’s turn');
   assert.deepEqual(h.shared.admitted, ['c']);
   assert.ok([...a.sim.world.pieces.values()].some((p) => p.s === 'w' && p.o === 1), 'with a squad of their own');
 });

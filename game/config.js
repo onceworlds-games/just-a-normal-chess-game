@@ -1,66 +1,55 @@
 // Every number that shapes the battle. Pure data: imported by the simulation, the renderer and the tests.
 
-export const W = 100;
-export const H = 100;
+// The battlefield after the awakening: 14 files by 20 ranks. Black's army and the dragon hold the top, White the
+// bottom. The opening's 8x8 board sits at the bottom middle (a8 at KEEP_X, KEEP_Y).
+export const W = 14;
+export const H = 20;
+export const KEEP_X = 3;
+export const KEEP_Y = 12;
+export const BOSS_X = 7; // the dragon's king square
+export const BOSS_Y = 2;
+export const BLACK_PAWN_ROW = 6;
+export const WHITE_PAWN_ROW = H - 2;
 
-// The dragon's throne (its king square) and the chess board's place in the world (a8 at KEEP_X, KEEP_Y).
-export const BOSS_X = 50;
-export const BOSS_Y = 36;
-export const KEEP_X = 46;
-export const KEEP_Y = 58;
-export const THRONE_R = 9; // squares closer than this to the throne are sealed until the boss fight
-export const RING_R0 = 9; // the rock ring around it
-export const RING_R1 = 11.2;
+// Black's turn plays out one action at a time so everyone can follow it (seconds).
+export const BEAT_MOVE = 0.28;
+export const BEAT_STRIKE = 0.42;
+export const BEAT_ATTACK = 1.1;
+export const BLACK_TURN_MAX = 6.5; // moves speed up so a long turn still fits in about this long
 
-// The battlefield after the awakening, then +1 row or column every GROW_EVERY seconds (N, E, S, W in turn).
-export const START_BOUNDS = [34, 22, 65, 70];
-export const GROW_EVERY = 10;
-
-export const BLACK_TICK = 5; // every black piece moves once, all at once
-export const REACH = 8; // the farthest a rook, bishop or queen slides
-export const STONE_REACH = 4;
-export const SUMMON_FLIGHT = 1.6; // seconds from a summon to the landing
-export const SUMMON_SICK = 1.5; // a piece that landed this recently skips Black's tick
-
-// White's recharge after a move, seconds. A strike on armour or the dragon recharges STRIKE_CD times as long.
-export const CD = { p: 2.0, n: 2.5, b: 2.8, r: 3.0, q: 3.5, k: 2.0 };
-export const STRIKE_CD = 2;
-export const AUTO_DELAY = 0.5; // an enemy must sit in reach this long before a piece takes it by itself
-
+export const PART_REACH = 2; // the dragon's own pieces strike this far
 export const VALUE = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
 export const DAMAGE = { p: 1, n: 2, b: 2, r: 3, q: 4, k: 1 }; // against the dragon's parts
-export const PROMO_COST = { n: 5, b: 5, r: 9, q: 15 };
-export const PAWN_PROMOTES = 3; // captures before a white pawn becomes a queen
-export const BLACK_PAWN_PROMOTES = 2;
-export const CASTLE_CD = 40;
+export const CHECKPOINT_EVERY = 4; // white turns
+export const HELP_EVERY = 4; // every this many turns each player gets a pawn (and later a knight) on its back rank
 
 export const CINEMATIC = 10; // the awakening
-export const FIRST_BREAK = 20;
-export const BREAK = 25;
-export const BOSS_INTRO = 8;
 
 export const DIFFICULTY = {
-  casual: { label: 'Casual', enemies: 0.7, armour: 0, boss: 0.7, cunning: 0, depth: 2, attackGap: 1.25, reflex: 0.4 },
-  normal: { label: 'Normal', enemies: 1, armour: 0, boss: 1, cunning: 0.5, depth: 3, attackGap: 1, reflex: 1 },
-  hard: { label: 'Hard', enemies: 1.2, armour: 1, boss: 1, cunning: 0.75, depth: 3, attackGap: 0.9, reflex: 1.5 },
+  casual: { label: 'Casual', army: 'casual', kingHp: 4, maxMoves: 5, risk: 0.7, aggression: 0.6, boss: 0.75, strikes: 1, depth: 2 },
+  normal: { label: 'Normal', army: 'normal', kingHp: 3, maxMoves: 7, risk: 1, aggression: 1, boss: 1, strikes: 2, depth: 3 },
+  hard: { label: 'Hard', army: 'hard', kingHp: 2, maxMoves: 9, risk: 1.1, aggression: 1.2, boss: 1.2, strikes: 2, depth: 3 },
 };
 export const DIFF_KEYS = ['casual', 'normal', 'hard'];
 
-// More players: more enemies and a tougher dragon.
-export const playerScale = (n) => 1 + 0.55 * (Math.max(1, n) - 1);
-export const bossScale = (n) => 1 + 0.45 * (Math.max(1, n) - 1);
+// More players: a bigger black army and a tougher dragon.
+export const playerScale = (n) => 1 + 0.5 * (Math.max(1, n) - 1);
+export const bossScale = (n) => 1 + 0.4 * (Math.max(1, n) - 1);
 
 export const SLOT_COLORS = ['#4aa3ea', '#f0a432', '#b884f0', '#ef6b8f'];
 export const SLOT_NAMES = ['Blue', 'Gold', 'Violet', 'Rose'];
 export const MAX_SLOTS = 4;
 
 export const TYPES = ['p', 'n', 'b', 'r', 'q', 'k'];
-export const SIDES = ['w', 'b', 's']; // white, black, stone (black's rocks come alive)
+export const SIDES = ['w', 'b', 's']; // white, black, and a spare kind kept for old snapshots
 export const NAMES = { p: 'Pawn', n: 'Knight', b: 'Bishop', r: 'Rook', q: 'Queen', k: 'King' };
 
 // Piece flags (piece.st)
-export const ST_AIR = 1; // summoned, still in the air: lands at piece.cd
-export const ST_ORDER = 2; // marching to a target
-export const ST_ELITE = 4; // a named elite (a black queen with a crown of hit points)
+export const ST_AIR = 1; // arriving (a summoned pawn, a reinforcement): not on the board until its arc lands
+export const ST_MOVED = 2; // White: already moved this turn
+export const ST_ELITE = 4; // a crowned black piece (two hits)
 export const ST_VET = 8; // promoted
 export const ST_GHOST = 16; // a Check attacker conjured by the dragon
+
+// Black's roles (piece.w): how its AI uses each piece.
+export const ROLE = { guard: 1, hunter: 2, pawn: 3, summoned: 4 };

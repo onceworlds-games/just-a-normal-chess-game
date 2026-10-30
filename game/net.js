@@ -2,7 +2,7 @@
 // and writes it to room state 5 times a second; everyone else decodes those and sends commands to the host.
 
 import { Sim, decodeWorld } from './sim.js';
-import { MAX_SLOTS, DIFF_KEYS } from './config.js';
+import { MAX_SLOTS, DIFF_KEYS, W } from './config.js';
 import { CHUNKS } from './codec.js';
 
 const STEP = 0.05;
@@ -191,7 +191,7 @@ export function createNet(ow, room, hooks) {
     if (g && g.mid === matchId()) {
       const chunks = [];
       for (let i = 0; i < CHUNKS; i++) chunks.push(room.state[`host:p${i}`] ?? '');
-      const sim = Sim.fromRoom(g, chunks, room.state['host:r'] ?? '', activeSlotList().length ? activeSlotList() : [0], readCheckpoint());
+      const sim = Sim.fromRoom(g, chunks, activeSlotList().length ? activeSlotList() : [0], readCheckpoint());
       if (sim) {
         net.sim = sim;
         net.simMid = matchId();
@@ -232,10 +232,7 @@ export function createNet(ow, room, hooks) {
         }
       }
     }
-    if (e.r !== null && (force || e.r !== net.lastRocks)) {
-      room.setState('host:r', e.r);
-      net.lastRocks = e.r;
-    }
+
     net.g = e.g;
     // The checkpoint lives in room state too, so a new host (or this page after a reload) can still retry from it.
     if (sim.ck && sim.ck.t !== net.roomCk) {
@@ -247,7 +244,7 @@ export function createNet(ow, room, hooks) {
     // Checkpoints go to the host's save, so the run can be picked up another day.
     if (sim.ck && sim.ck.t !== net.savedCk && hooks.saveRun) {
       net.savedCk = sim.ck.t;
-      hooks.saveRun({ v: 1, seed: sim.seed, diff: sim.diffKey, ck: sim.ck, retries: sim.stats.retries, n: sim.ck.n, at: Date.now() });
+      hooks.saveRun({ v: 2, seed: sim.seed, diff: sim.diffKey, ck: sim.ck, retries: sim.stats.retries, turn: sim.ck.turn, at: Date.now() });
     }
   }
 
@@ -313,10 +310,10 @@ export function createNet(ow, room, hooks) {
   });
   for (const ev of ['join', 'ready', 'rename', 'match', 'away', 'back', 'leave', 'open', 'error']) room.on(ev, () => hooks.onRoster?.());
 
-  /** At a wave break the host seats friends who arrived mid-run, and players who came back after their seat was let go. */
+  /** During White's turn the host seats friends who arrived mid-battle, and players who came back after their seat was let go. */
   function admitLate() {
     const sim = net.sim;
-    if (!sim || sim.phase !== 'rts' || sim.wave.st !== 'break') return;
+    if (!sim || sim.phase !== 'battle' || sim.side !== 'w') return;
     const idOf = (p) => (typeof p === 'string' ? p : p?.id);
     const watching = new Set((room.spectators ?? []).map(idOf));
     const online = [...room.players.values()].filter((p) => p && p.connected !== false && !(p.id in net.slots));
@@ -355,6 +352,13 @@ export function createNet(ow, room, hooks) {
       net.sincePub += dt;
       if (net.sincePub >= PUBLISH) {
         net.sincePub = 0;
+        // A friend whose connection dropped doesn't hold up White's turn.
+        if (sim.phase === 'battle' && sim.side === 'w') {
+          for (const [id, slot] of Object.entries(net.slots)) {
+            const p = room.players.get(id);
+            if ((!p || p.connected === false) && !sim.done.has(slot)) sim.cmd(slot, { t: 'end' });
+          }
+        }
         publish();
         admitLate();
       }
@@ -370,7 +374,7 @@ export function createNet(ow, room, hooks) {
         if (g.ph !== 'chess' && !(g.ph === 'lost' && g.ch)) {
           const chunks = [];
           for (let i = 0; i < CHUNKS; i++) chunks.push(room.state[`host:p${i}`] ?? '');
-          net.world = decodeWorld(g, chunks, room.state['host:r'] ?? '', net.world);
+          net.world = decodeWorld(g, chunks, net.world);
           applyPredictions();
         } else net.world = null;
       } else if (!playing()) {
@@ -390,11 +394,11 @@ export function createNet(ow, room, hooks) {
         net.pending.delete(id);
         continue;
       }
-      if (w.occ[p.y * 100 + p.x] !== 0) continue;
-      w.occ[piece.y * 100 + piece.x] = 0;
+      if (w.occ[p.y * W + p.x] !== 0) continue;
+      w.occ[piece.y * W + piece.x] = 0;
       piece.x = p.x;
       piece.y = p.y;
-      w.occ[p.y * 100 + p.x] = id;
+      w.occ[p.y * W + p.x] = id;
     }
   }
 

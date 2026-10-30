@@ -6,28 +6,115 @@
   "productionBranch": "main",
   "genre": "Strategy",
   "icon": "store/icon.png",
-  "thumbnails": ["store/thumb-1.png", "store/thumb-2.png", "store/thumb-3.png"],
+  "thumbnails": [
+    "store/thumb-1.png",
+    "store/thumb-2.png",
+    "store/thumb-3.png"
+  ],
   "controls": [
-    { "keys": ["Click", "Tap"], "action": "Select, move, march" },
-    { "keys": ["Drag"], "action": "Move a piece, or box-select" },
-    { "keys": ["Long press"], "action": "Box-select on touch" },
-    { "keys": ["Right click"], "action": "March the selection" },
-    { "keys": ["W", "A", "S", "D"], "action": "Move the camera" },
-    { "keys": ["Wheel", "Pinch"], "action": "Zoom" },
-    { "keys": ["Space"], "action": "Find your king" },
-    { "keys": ["Q"], "action": "Select all on screen" },
-    { "keys": ["H"], "action": "Halt the selection" },
-    { "keys": ["C"], "action": "Castle" },
-    { "keys": ["1", "2", "3", "4"], "action": "Promote: knight, bishop, rook, queen" },
-    { "keys": ["F"], "action": "Auto-capture on or off" }
+    {
+      "keys": [
+        "Click",
+        "Tap"
+      ],
+      "action": "Pick a piece, then a square"
+    },
+    {
+      "keys": [
+        "Drag"
+      ],
+      "action": "Move a piece, or pan the board"
+    },
+    {
+      "keys": [
+        "Space",
+        "Enter"
+      ],
+      "action": "End your turn"
+    },
+    {
+      "keys": [
+        "Z"
+      ],
+      "action": "Undo your last move this turn"
+    },
+    {
+      "keys": [
+        "K"
+      ],
+      "action": "Find your king"
+    },
+    {
+      "keys": [
+        "F"
+      ],
+      "action": "Fit the whole board"
+    },
+    {
+      "keys": [
+        "Wheel",
+        "Pinch"
+      ],
+      "action": "Zoom"
+    },
+    {
+      "keys": [
+        "W",
+        "A",
+        "S",
+        "D"
+      ],
+      "action": "Pan the board"
+    },
+    {
+      "keys": [
+        "Esc"
+      ],
+      "action": "Deselect"
+    }
   ],
   "badges": [
-    { "id": "awakening", "name": "It Was Never Normal", "description": "Wake the Endgame.", "icon": "store/badge-awakening.png" },
-    { "id": "wave-5", "name": "Holding the Line", "description": "Clear wave 5.", "icon": "store/badge-wave-5.png" },
-    { "id": "wave-10", "name": "Ten Waves", "description": "Clear all ten waves.", "icon": "store/badge-wave-10.png" },
-    { "id": "checkmate", "name": "Checkmate the Dragon", "description": "Defeat the Endgame.", "icon": "store/badge-checkmate.png" },
-    { "id": "promotion", "name": "Promotion", "description": "Promote a pawn.", "icon": "store/badge-promotion.png" },
-    { "id": "grandmaster", "name": "Grandmaster", "description": "Win on Hard.", "icon": "store/badge-grandmaster.png" },
-    { "id": "royal-escort", "name": "Royal Escort", "description": "Win without a retry.", "icon": "store/badge-royal-escort.png" }
+    {
+      "id": "awakening",
+      "name": "It Was Never Normal",
+      "description": "Wake the Endgame.",
+      "icon": "store/badge-awakening.png"
+    },
+    {
+      "id": "wave-5",
+      "name": "Holding the Line",
+      "description": "Clear wave 5.",
+      "icon": "store/badge-wave-5.png"
+    },
+    {
+      "id": "wave-10",
+      "name": "Ten Waves",
+      "description": "Clear all ten waves.",
+      "icon": "store/badge-wave-10.png"
+    },
+    {
+      "id": "checkmate",
+      "name": "Checkmate the Dragon",
+      "description": "Defeat the Endgame.",
+      "icon": "store/badge-checkmate.png"
+    },
+    {
+      "id": "promotion",
+      "name": "Promotion",
+      "description": "Promote a pawn.",
+      "icon": "store/badge-promotion.png"
+    },
+    {
+      "id": "grandmaster",
+      "name": "Grandmaster",
+      "description": "Win on Hard.",
+      "icon": "store/badge-grandmaster.png"
+    },
+    {
+      "id": "royal-escort",
+      "name": "Royal Escort",
+      "description": "Win without a retry.",
+      "icon": "store/badge-royal-escort.png"
+    }
   ]
 }

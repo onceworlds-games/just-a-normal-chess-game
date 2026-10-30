@@ -1,10 +1,10 @@
 // The board, its pieces, the dragon and every mark on the squares. One camera over the 100×100 world: the opening is
 // just the camera framing the 8×8 chess board in the middle of it.
 
-import { W, H, KEEP_X, KEEP_Y, BOSS_X, BOSS_Y, CINEMATIC, ST_AIR, ST_ELITE, ST_GHOST, ST_VET, SLOT_COLORS, CD, STRIKE_CD } from './config.js';
+import { W, H, KEEP_X, KEEP_Y, BOSS_X, BOSS_Y, CINEMATIC, ST_AIR, ST_ELITE, ST_GHOST, ST_VET, ST_MOVED, SLOT_COLORS } from './config.js';
 import { blit, drawPiece } from './pieces.js';
 import { attackSquares } from './boss.js';
-import { attackedBy, active, T_ROCK, T_THRONE } from './rules.js';
+
 import { hash } from './rng.js';
 
 export const COLORS = {
@@ -22,7 +22,7 @@ const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
 const lerp = (a, b, t) => a + (b - a) * t;
 
 // The dragon's drawing: per group, the pivot its parts swing around and how big they are.
-const PART_SIZE = { head: 2.35, king: 1.55, torso: 1.6, neck: 1.5, lwing: 1.75, rwing: 1.75, lfeath: 1.7, rfeath: 1.7, tail: 1.55, sting: 1.7, larm: 1.45, rarm: 1.45 };
+const PART_SIZE = { head: 1.7, king: 1.2, torso: 1.2, neck: 1.15, lwing: 1.38, rwing: 1.38, lfeath: 1.3, rfeath: 1.3, tail: 1.2, sting: 1.25, larm: 1.1, rarm: 1.1 };
 const DRAW_ORDER = ['tail', 'sting', 'lfeath', 'rfeath', 'lwing', 'rwing', 'larm', 'rarm', 'torso', 'king', 'neck', 'head'];
 
 export function createRenderer(canvas, fx) {
@@ -220,7 +220,7 @@ export function createRenderer(canvas, fx) {
     ctx.globalAlpha = 0.18 / (1 + lift * 0.3);
     ctx.fillStyle = '#000';
     ctx.beginPath();
-    ctx.ellipse(sx, sy, 6 * s * (1 + lift * 0.08), 3.4 * s * (1 + lift * 0.08), 0, 0, Math.PI * 2);
+    ctx.ellipse(sx, sy, 4.2 * s * (1 + lift * 0.08), 2.4 * s * (1 + lift * 0.08), 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
     // Its real squares, faintly: what a legal move can strike.
@@ -348,32 +348,23 @@ export function createRenderer(canvas, fx) {
     const vy1 = Math.min(H - 1, Math.ceil(wy1) + 1);
 
     // The board's visible rectangle (it grows during the awakening).
-    let b = world.bounds;
+    const FULL = [0, 0, W - 1, H - 1];
+    let b = world.bounds ?? FULL;
     const aw = f.awake;
     const cine = aw && f.t - aw.t0 < CINEMATIC + 0.5 ? f.t - aw.t0 : -1;
     const keepRect = [KEEP_X, KEEP_Y, KEEP_X + 7, KEEP_Y + 7];
     let grow = 1;
     if (cine >= 0) {
       grow = ease((cine - 3) / 3);
-      b = [0, 1, 2, 3].map((i) => Math.round(lerp(keepRect[i], world.bounds[i], grow)));
+      b = [0, 1, 2, 3].map((i) => Math.round(lerp(keepRect[i], FULL[i], grow)));
     }
 
     if (!f.chessOnly) {
-      // The unrevealed board under the void: a faint grid, so the battlefield reads as bigger than what's lit.
-      const [gx0, gy0] = cam.toScreen(0, 0);
-      const [gx1, gy1] = cam.toScreen(W, H);
-      ctx.fillStyle = '#22211f';
-      ctx.fillRect(gx0, gy0, gx1 - gx0, gy1 - gy0);
-      if (s > 7) {
-        ctx.fillStyle = 'rgba(255,255,255,0.025)';
-        for (let y = vy0; y <= vy1; y++) {
-          for (let x = vx0 + ((vx0 + y) & 1); x <= vx1; x += 2) {
-            if (x >= b[0] && x <= b[2] && y >= b[1] && y <= b[3]) continue;
-            const [px, py] = cam.toScreen(x, y);
-            ctx.fillRect(px, py, s, s);
-          }
-        }
-      }
+      // The battlefield's edge: a soft shadow under the board.
+      const [gx0, gy0] = cam.toScreen(b[0], b[1]);
+      const [gx1, gy1] = cam.toScreen(b[2] + 1, b[3] + 1);
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.fillRect(gx0 - 6, gy0 - 6, gx1 - gx0 + 12, gy1 - gy0 + 12);
     }
 
     // Squares.
@@ -393,27 +384,6 @@ export function createRenderer(canvas, fx) {
         ctx.fillRect(px - pad * 0.5, py - pad * 0.5, s + pad, s + pad);
       }
     }
-    // The throne: dark, scorched squares while sealed; cracked when open.
-    if (world.terr && !f.chessOnly) {
-      for (let y = by0; y <= by1; y++) {
-        for (let x = bx0; x <= bx1; x++) {
-          if (world.terr[y * W + x] !== T_THRONE) continue;
-          const [px, py] = cam.toScreen(x, y);
-          const dark = (x + y) & 1;
-          ctx.fillStyle = world.sealed ? (dark ? '#b9ab98' : '#d8ccba') : dark ? 'rgba(120,40,30,0.28)' : 'rgba(120,40,30,0.12)';
-          ctx.fillRect(px - 0.25, py - 0.25, s + 0.5, s + 0.5);
-        }
-      }
-    }
-    // While sealed, a ward of red light rings the throne.
-    if (world.boss && world.sealed && !f.chessOnly) {
-      const [cx, cy] = cam.toScreen(world.boss.x + 0.5, world.boss.y + 0.5);
-      ctx.strokeStyle = `rgba(190,30,30,${0.35 + 0.15 * Math.sin(now * 2)})`;
-      ctx.lineWidth = Math.max(2, s * 0.18);
-      ctx.beginPath();
-      ctx.arc(cx, cy, s * 8.6, 0, Math.PI * 2);
-      ctx.stroke();
-    }
     // The old board keeps a thin gold frame after the awakening, with its coordinates.
     if (!f.chessOnly && cine < 0) {
       const [kx, ky] = cam.toScreen(KEEP_X, KEEP_Y);
@@ -421,22 +391,6 @@ export function createRenderer(canvas, fx) {
       ctx.lineWidth = Math.max(1, s * 0.05);
       ctx.strokeRect(kx, ky, s * 8, s * 8);
     }
-    // Growth: the side that grows next glows as its time comes.
-    if (!f.chessOnly && f.growNext && cine < 0) {
-      const left = f.growNext - f.t;
-      if (left < 2.5 && left > 0) {
-        const side = f.growSide;
-        const a = (1 - left / 2.5) * 0.6;
-        const [x0, y0] = cam.toScreen(world.bounds[0], world.bounds[1]);
-        const [x1, y1] = cam.toScreen(world.bounds[2] + 1, world.bounds[3] + 1);
-        ctx.fillStyle = `rgba(235,236,208,${a * 0.5})`;
-        if (side === 0) ctx.fillRect(x0, y0 - s, x1 - x0, s);
-        else if (side === 1) ctx.fillRect(x1, y0, s, y1 - y0);
-        else if (side === 2) ctx.fillRect(x0, y1, x1 - x0, s);
-        else ctx.fillRect(x0 - s, y0, s, y1 - y0);
-      }
-    }
-
     // Coordinates on the chess board (letters and numbers in the corner, in the other square's colour).
     if (f.chessOnly || (cine >= 0 && cine < 3.2)) {
       const fs = Math.max(11, Math.round(s * 0.21));
@@ -455,25 +409,6 @@ export function createRenderer(canvas, fx) {
       }
     }
 
-    // Rocks.
-    if (world.terr && !f.chessOnly) {
-      const shakeRing = f.ringShake ?? 0;
-      for (let y = by0; y <= by1; y++) {
-        for (let x = bx0; x <= bx1; x++) {
-          if (world.terr[y * W + x] !== T_ROCK) continue;
-          let rise = 1;
-          if (cine >= 0) rise = ease((cine - 3.4 - Math.hypot(x - BOSS_X, y - BOSS_Y) * 0.02) / 0.6);
-          if (rise <= 0) continue;
-          const [px, py] = cam.toScreen(x, y);
-          const jx = shakeRing ? Math.sin(now * 60 + x * 7 + y) * s * 0.05 * shakeRing : 0;
-          const c = rockSprite(s, hash(x, y) % 97);
-          ctx.globalAlpha = rise;
-          ctx.drawImage(c, px + jx, py + s * (1 - rise) * 0.5, s, s);
-          ctx.globalAlpha = 1;
-        }
-      }
-    }
-
     // Square marks under the pieces.
     const sq = (x, y, color) => {
       const [px, py] = cam.toScreen(x, y);
@@ -481,6 +416,13 @@ export function createRenderer(canvas, fx) {
       ctx.fillRect(px, py, s, s);
     };
     if (f.last) for (const [x, y] of f.last) sq(x, y, COLORS.last);
+    // Black's last turn, faintly, the way a chess site marks the last move.
+    if (f.lastBlack) {
+      for (const [x0, y0, x1, y1] of f.lastBlack) {
+        sq(x0, y0, 'rgba(255,255,51,0.2)');
+        sq(x1, y1, 'rgba(255,255,51,0.34)');
+      }
+    }
     if (f.selSquares) for (const [x, y] of f.selSquares) sq(x, y, COLORS.select);
     if (f.check) {
       const [x, y] = f.check;
@@ -598,7 +540,7 @@ export function createRenderer(canvas, fx) {
       if (cine >= 0) {
         if (p.x < b[0] || p.x > b[2] || p.y < b[1] || p.y > b[3]) continue;
         const inKeep = p.x >= KEEP_X && p.x <= KEEP_X + 7 && p.y >= KEEP_Y && p.y <= KEEP_Y + 7;
-        if (!inKeep) pop = clamp01((cine - 3 - 3 * Math.max(Math.abs(p.x - KEEP_X - 3.5) / 20, Math.abs(p.y - KEEP_Y - 3.5) / 30)) / 0.3);
+        if (!inKeep) pop = clamp01((cine - 3 - 3 * Math.max(Math.abs(p.x - KEEP_X - 3.5) / 7, Math.abs(p.y - KEEP_Y - 3.5) / 14)) / 0.3);
         if (pop <= 0) continue;
       }
       const born = clamp01((now - a.born) / 0.25);
@@ -628,7 +570,7 @@ export function createRenderer(canvas, fx) {
         ctx.fillRect(px - s * 0.6, py - s * 0.6, s * 1.2, s * 1.2);
       }
       const ghost = p.st & ST_GHOST ? 0.55 + 0.3 * Math.sin(now * 7) : 1;
-      blit(ctx, p.k, color, px, py, size, ghost);
+      blit(ctx, p.k, color, px, py, size, ghost * (p.st & ST_MOVED && !f.chessOnly ? 0.5 : 1));
       if (p.st & ST_VET && p.s === 'w') {
         ctx.fillStyle = '#d6aa4a';
         ctx.beginPath();
@@ -647,17 +589,6 @@ export function createRenderer(canvas, fx) {
           ctx.fill();
           ctx.stroke();
         }
-      }
-      // Recharging (yours): a thin bar along the square's foot filling back up.
-      if (p.s === 'w' && (p.o === f.mySlot || f.solo) && f.t < p.cd && !f.chessOnly) {
-        const rem = p.cd - f.t;
-        const full = rem > CD[p.k] + 0.05 ? CD[p.k] * STRIKE_CD : CD[p.k];
-        const k = clamp01(1 - rem / full);
-        const [qx, qy] = cam.toScreen(a.x, a.y + 1);
-        ctx.fillStyle = 'rgba(0,0,0,0.35)';
-        ctx.fillRect(qx + s * 0.1, qy - s * 0.09, s * 0.8, Math.max(2, s * 0.055));
-        ctx.fillStyle = '#81b64c';
-        ctx.fillRect(qx + s * 0.1, qy - s * 0.09, s * 0.8 * k, Math.max(2, s * 0.055));
       }
     }
     if (pieces.length < world.pieces.size * 0.5 && Math.random() < 0.02) forget(world);

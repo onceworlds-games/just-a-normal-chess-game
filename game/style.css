@@ -381,3 +381,25 @@ button:focus-visible { outline: 2px solid var(--green-hi); outline-offset: 2px; 
 @media (prefers-reduced-motion: reduce) {
   .says.hungry, .banner, .card.result, .toast, .tip { animation: none !important; }
 }
+
+/* turns */
+.turn-btns { display: flex; gap: 8px; }
+.turn-btns .end-btn { flex: 1; height: 56px; font-size: 22px; }
+.turn-btns .btn.grey { height: 56px; }
+.end-btn.glow { animation: glow 1.2s ease-in-out infinite; }
+@keyframes glow { 50% { filter: brightness(1.18); } }
+.end-btn.warn { background: #b33a2a; box-shadow: inset 0 -4px 0 #6e1e15; }
+.bosscard { padding: 12px 16px; display: flex; flex-direction: column; gap: 6px; border-bottom: 1px solid var(--line); }
+.b-top { display: flex; align-items: center; gap: 8px; }
+.b-av { display: inline-flex; width: 30px; height: 30px; border-radius: 4px; background: radial-gradient(circle at 50% 60%, #6b1d18, #2a0f0d); align-items: center; justify-content: center; }
+.b-name { font-weight: 800; font-size: 16px; flex: 1; }
+.b-pct { font-weight: 800; font-variant-numeric: tabular-nums; }
+.b-sub { color: var(--muted); font-weight: 600; font-size: 13px; }
+.b-next { font-weight: 700; font-size: 14px; color: #ff8a73; min-height: 18px; }
+.b-next:empty { display: none; }
+.tm.ok { color: var(--green-hi); }
+.tm { color: var(--muted); }
+.tp::after { content: ' pcs'; font-weight: 600; }
+#app[data-wide='0'] .bosscard, #app[data-wide='0'] .war .selbox { display: none; }
+#app[data-wide='0'] .turn-btns .end-btn, #app[data-wide='0'] .turn-btns .btn.grey { height: 44px; font-size: 18px; }
+@media (max-height: 520px) { #app[data-wide='1'] .bosscard .b-sub { display: none; } }

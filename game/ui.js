@@ -2,7 +2,7 @@
 // war room) and the banners and result card over the board. Names from other players go in with textContent only.
 
 import { pieceSvg } from './pieces.js';
-import { SLOT_COLORS, PROMO_COST, NAMES, DIFFICULTY, DIFF_KEYS } from './config.js';
+import { SLOT_COLORS, NAMES, DIFFICULTY, DIFF_KEYS } from './config.js';
 
 export function h(tag, attrs = {}, ...kids) {
   const el = document.createElement(tag);
@@ -224,37 +224,36 @@ export function fillMoves(list, moves) {
   list.parentElement.scrollTop = list.parentElement.scrollHeight;
 }
 
-export function warPanel(refs, { onReadyWave, onPromo, onHalt, onCastle, onAuto, onPause, onSelectAll, onKing, minimap }) {
-  refs.waveT = h('div', { class: 'w-title' });
-  refs.waveS = h('div', { class: 'w-sub' });
-  refs.waveR = h('div', { class: 'w-right' });
-  refs.prog = h('i');
-  refs.waveBtn = h('button', { class: 'btn green', onclick: () => onReadyWave() }, 'Start now');
-  refs.sel = h('div', { class: 'sel' });
-  refs.selName = h('div', { class: 'sel-name' });
+export function warPanel(refs, { onEnd, onUndo, onEndAll, onPause, onKing }) {
+  refs.turnT = h('div', { class: 'w-title' });
+  refs.turnS = h('div', { class: 'w-sub' });
+  refs.turnR = h('div', { class: 'w-right' });
+  refs.end = h('button', { class: 'btn green big end-btn', onclick: () => onEnd() }, 'End turn');
+  refs.undo = h('button', { class: 'btn grey', onclick: () => onUndo() }, 'Undo');
+  refs.endAll = h('button', { class: 'btn small grey', onclick: () => onEndAll() }, 'End for everyone');
+  refs.bossT = h('div', { class: 'b-name' }, 'The Endgame');
+  refs.bossP = h('div', { class: 'b-pct' });
+  refs.hp = h('i');
+  refs.bossS = h('div', { class: 'b-sub' });
+  refs.next = h('div', { class: 'b-next' });
   refs.selIcons = h('div', { class: 'sel-icons' });
-  refs.promo = h('div', { class: 'promo' }, ['n', 'b', 'r', 'q'].map((k) => h('button', { class: 'btn small promo-b', 'data-k': k, onclick: () => onPromo(k) }, h('span', { html: pieceSvg(k, 'w', 22) }), String(PROMO_COST[k]))));
-  refs.halt = h('button', { class: 'btn small grey', onclick: () => onHalt() }, 'Halt');
-  refs.castle = h('button', { class: 'btn small grey', onclick: () => onCastle() }, 'Castle');
+  refs.selName = h('div', { class: 'sel-name' });
   refs.team = h('div', { class: 'team' });
-  refs.auto = h('button', { class: 'switch', role: 'switch', onclick: () => onAuto() }, h('i'), 'Auto-capture');
   refs.pause = h('button', { class: 'btn small grey', onclick: () => onPause() }, 'Pause');
-  refs.all = h('button', { class: 'btn small grey', onclick: () => onSelectAll() }, 'Select all');
   refs.king = h('button', { class: 'btn small grey', onclick: () => onKing() }, h('span', { html: pieceSvg('k', 'w', 18) }), 'King');
-  refs.mapSlot = h('div', { class: 'map-slot' }, minimap);
   return h(
     'div',
     { class: 'pn war' },
-    h('div', { class: 'wave' }, h('div', { class: 'w-top' }, h('div', {}, refs.waveT, refs.waveS), refs.waveR), h('div', { class: 'prog' }, refs.prog), refs.waveBtn),
-    refs.mapSlot,
-    h('div', { class: 'selbox' }, h('div', { class: 'sel-head' }, refs.selIcons, refs.selName), h('div', { class: 'sel-actions' }, refs.promo, refs.halt, refs.castle)),
+    h('div', { class: 'wave' }, h('div', { class: 'w-top' }, h('div', {}, refs.turnT, refs.turnS), refs.turnR), h('div', { class: 'turn-btns' }, refs.end, refs.undo)),
+    h('div', { class: 'bosscard' }, h('div', { class: 'b-top' }, h('span', { class: 'b-av', html: pieceSvg('n', 'd', 26) }), refs.bossT, refs.bossP), h('div', { class: 'prog boss' }, refs.hp), refs.bossS, refs.next),
+    h('div', { class: 'selbox' }, h('div', { class: 'sel-head' }, refs.selIcons, refs.selName)),
     h('div', { class: 'pn-body scroll team-wrap' }, refs.team),
-    h('div', { class: 'pn-foot row tools' }, refs.all, refs.king, refs.auto, refs.pause),
+    h('div', { class: 'pn-foot row tools' }, refs.king, refs.endAll, refs.pause),
   );
 }
 
-export function teamRow(name, slot, pieces, material, me) {
-  return h('div', { class: 'team-row' }, h('i', { class: 'dot', style: `background:${SLOT_COLORS[slot] ?? '#888'}` }), h('span', { class: 'tn' }, name, me ? h('span', { class: 'you' }, ' (you)') : null), h('span', { class: 'tp' }, `${pieces}`), h('span', { class: 'tm' }, `+${material}`));
+export function teamRow(name, slot, pieces, done, me) {
+  return h('div', { class: 'team-row' }, h('i', { class: 'dot', style: `background:${SLOT_COLORS[slot] ?? '#888'}` }), h('span', { class: 'tn' }, name, me ? h('span', { class: 'you' }, ' (you)') : null), h('span', { class: 'tp' }, `${pieces}`), h('span', { class: `tm ${done ? 'ok' : ''}` }, done ? 'Done' : 'Moving'));
 }
 
 export function selectionIcons(kinds) {

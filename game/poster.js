@@ -7,6 +7,7 @@ import { Sim } from './sim.js';
 import { createAutopilot } from './autopilot.js';
 import { drawPiece } from './pieces.js';
 import { attackedBy, active } from './rules.js';
+import { KEEP_X, KEEP_Y } from './config.js';
 
 function play(sim, until, max = 200000) {
   const pilot = createAutopilot(sim, 0, { skill: 0.9, seed: 3 });
@@ -51,50 +52,29 @@ export async function runPoster(name) {
   let split = false;
 
   if (name === 'cover') {
-    play(sim, () => sim.wave.st === 'boss' && sim.t > sim.wave.t0 + 30);
+    // Deep in the battle: the dragon wounded, its lines broken, an attack announced.
+    play(sim, () => sim.phase === 'battle' && sim.side === 'w' && sim.world.boss && sim.turn >= 3);
     const b = sim.world.boss;
-    if (!b.atk.some((a) => a.k === 'rain')) sim.planAttack('rain');
-    const atk = b.atk.find((a) => a.k === 'rain');
-    if (atk) sim.t = atk.t0 + (atk.t1 - atk.t0) * 0.7;
-    cam.tcx = b.x + 0.5;
-    cam.tcy = b.y - 1.6;
-    cam.tscale = H / 14.5;
+    if (!b.atk.length) {
+      const atk = sim.planAttack('rain', sim.rng('poster'));
+      if (atk) b.atk.push(atk);
+    }
+    cam.tcx = 7;
+    cam.tcy = 3.7;
+    cam.tscale = H / 9.4;
     title = true;
   } else if (name === 'action') {
-    // Scan a run for the thickest fight (a 16×9 window with the most black and white pieces), then replay the same run
-    // (it is deterministic) to that moment.
-    const scan = new Sim({ seed: 20261030, diff: 'normal', slots: [0] });
-    const best = { score: -1, t: 0, x: 50, y: 60 };
-    const pilotScan = createAutopilot(scan, 0, { skill: 0.9, seed: 3 });
-    let next = 0;
-    while (scan.t < 60 * 40 && !(scan.wave.st === 'bossintro')) {
-      pilotScan();
-      scan.step(0.05);
-      if (scan.phase !== 'rts' || scan.wave.st !== 'fight' || scan.t < next) continue;
-      next = scan.t + 1;
-      const all = [...scan.world.pieces.values()].filter((p) => !(p.st & 1));
-      const bd = scan.world.bounds;
-      for (const p of all) {
-        if (p.s === 'w') continue;
-        if (p.x - bd[0] < 9 || bd[2] - p.x < 9 || p.y - bd[1] < 6 || bd[3] - p.y < 6) continue;
-        let nb = 0;
-        let nw = 0;
-        for (const q of all) if (Math.abs(q.x - p.x) <= 7 && Math.abs(q.y - p.y) <= 4) q.s === 'w' ? nw++ : nb++;
-        const score = Math.min(nb, nw) * 2 + nb;
-        if (score > best.score) Object.assign(best, { score, t: scan.t, x: p.x, y: p.y });
-      }
-    }
-    play(sim, () => sim.t >= best.t);
-    cam.tcx = best.x + 0.5;
-    cam.tcy = best.y + 0.5;
-    cam.tscale = H / 9.5;
+    // Black's turn in full swing: its army moving, pieces falling.
+    play(sim, () => sim.phase === 'battle' && sim.turn >= 7 && sim.side === 'b' && sim.bt && sim.bt.moves >= 3);
+    cam.tcx = 7;
+    cam.tcy = 9;
+    cam.tscale = H / 11;
   } else if (name === 'win') {
     // The twist: an ordinary chess game torn open onto the dragon.
-    play(sim, () => sim.wave.st === 'boss' && sim.t > sim.wave.t0 + 6);
-    const b = sim.world.boss;
-    cam.tcx = b.x - 4.5;
-    cam.tcy = b.y + 0.4;
-    cam.tscale = H / 14;
+    play(sim, () => sim.phase === 'battle' && sim.turn >= 2);
+    cam.tcx = 5.4;
+    cam.tcy = 3.6;
+    cam.tscale = H / 8.5;
     split = true;
   }
   cam.snap();
@@ -113,7 +93,7 @@ export async function runPoster(name) {
   if (name === 'action') {
     // A capture or two in mid-burst.
     const blacks = [...w.pieces.values()].filter((p) => p.s !== 'w' && active(p) && Math.abs(p.x - cam.cx) < 8 && Math.abs(p.y - cam.cy) < 5);
-    for (const p of blacks.slice(0, 2)) {
+    for (const p of blacks.slice(0, 1)) {
       fx.shards(p.x + 0.5, p.y + 0.5, '#3b3937', 14, 1.2);
       fx.ring(p.x + 0.5, p.y + 0.5, 'rgba(255,255,255,0.7)', 1, 0.5, 0.1);
     }
@@ -125,8 +105,6 @@ export async function runPoster(name) {
     t,
     world: w,
     awake: sim.awake,
-    growNext: sim.grow.next,
-    growSide: sim.grow.side,
     tickIn: 1.2,
     attacks: w.boss?.atk ?? [],
     threats,
@@ -153,16 +131,16 @@ function drawChessHalf(ctx, W, H) {
     [...row].forEach((ch, fx2) => {
       if (ch === '.') return;
       const s = ch === ch.toUpperCase() ? 'w' : 'b';
-      pieces.set(id, { id, s, k: ch.toLowerCase(), x: 46 + fx2, y: 58 + ry, o: 0, cd: 0, hp: 1, mh: 1, f: 0, st: 0 });
+      pieces.set(id, { id, s, k: ch.toLowerCase(), x: KEEP_X + fx2, y: KEEP_Y + ry, o: 0, cd: 0, hp: 1, mh: 1, f: 0, st: 0 });
       id++;
     });
   });
   const board = H * 0.98 / 8;
-  r.cam.tcx = 50 - (W * 0.3 - W / 2) / board;
-  r.cam.tcy = 62;
+  r.cam.tcx = KEEP_X + 4 - (W * 0.3 - W / 2) / board;
+  r.cam.tcy = KEEP_Y + 4;
   r.cam.tscale = board;
   r.cam.snap();
-  r.draw({ now: 1, t: 0, chessOnly: true, world: { pieces, bounds: [46, 58, 53, 65], terr: null, boss: null }, last: [[50, 59], [50, 61]], mySlot: 0, solo: true, sel: new Set() });
+  r.draw({ now: 1, t: 0, chessOnly: true, world: { pieces, bounds: [KEEP_X, KEEP_Y, KEEP_X + 7, KEEP_Y + 7], terr: null, boss: null }, last: [[KEEP_X + 4, KEEP_Y + 1], [KEEP_X + 4, KEEP_Y + 3]], mySlot: 0, solo: true, sel: new Set() });
   // The tear: a jagged diagonal from top to bottom.
   ctx.save();
   ctx.beginPath();
@@ -197,12 +175,12 @@ function drawChessHalf(ctx, W, H) {
 }
 
 function drawTitle(ctx, W, H) {
-  const band = ctx.createLinearGradient(0, 0, 0, H * 0.4);
-  band.addColorStop(0, 'rgba(20,18,16,0.92)');
-  band.addColorStop(0.7, 'rgba(20,18,16,0.55)');
+  const band = ctx.createLinearGradient(0, H, 0, H * 0.62);
+  band.addColorStop(0, 'rgba(20,18,16,0.94)');
+  band.addColorStop(0.6, 'rgba(20,18,16,0.6)');
   band.addColorStop(1, 'rgba(20,18,16,0)');
   ctx.fillStyle = band;
-  ctx.fillRect(0, 0, W, H * 0.4);
+  ctx.fillRect(0, H * 0.62, W, H * 0.38);
   const size = Math.round(W * 0.066);
   ctx.font = `900 ${size}px Figtree, sans-serif`;
   ctx.textAlign = 'center';
@@ -210,9 +188,9 @@ function drawTitle(ctx, W, H) {
   ctx.lineJoin = 'round';
   ctx.lineWidth = size * 0.16;
   ctx.strokeStyle = 'rgba(0,0,0,0.85)';
-  ctx.strokeText('Just a Normal Chess Game', W / 2, H * 0.13);
+  ctx.strokeText('Just a Normal Chess Game', W / 2, H * 0.87);
   ctx.fillStyle = '#ffffff';
-  ctx.fillText('Just a Normal Chess Game', W / 2, H * 0.13);
+  ctx.fillText('Just a Normal Chess Game', W / 2, H * 0.87);
 }
 
 function disc(ctx, W, H, inner, outer) {
