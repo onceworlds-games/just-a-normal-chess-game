@@ -3,7 +3,7 @@
 import * as C from './config.js';
 import { legalMoves, inCheck, kingSquare, colorOf, typeOf, parseBoard, findMove, initialPosition } from './chess.js';
 import { movesOf, attacksOf, attackedBy, active, idx } from './rules.js';
-import { attackSquares, GROUP_LABEL, ATTACK_NAME, integrity, kingExposed } from './boss.js';
+import { attackSquares, GROUP_LABEL, ATTACK_NAME, integrity, kingExposed, groupAlive } from './boss.js';
 import { createRenderer } from './render.js';
 import { createFx } from './fx.js';
 import { createNet, stubRoom } from './net.js';
@@ -122,6 +122,8 @@ async function boot() {
     setTimeout(() => el.classList.add('out'), 5200);
     setTimeout(() => el.remove(), 5800);
   }
+  // The wings this run has broken (for the Clipped Wings badge).
+  const wingsBroken = new Set();
   const award = (id) => {
     try {
       ow?.badges?.award?.(id);
@@ -965,9 +967,15 @@ async function boot() {
         fx.shake(0.3);
         break;
       }
-      case 'G':
+      case 'G': {
         if (a[0] !== 'king') ui.toast(`${GROUP_LABEL[a[0]] ?? 'Part'} broken`);
+        if (a[0] === 'lwing' || a[0] === 'rwing') {
+          wingsBroken.add(a[0]);
+          const gone = (g) => wingsBroken.has(g) || (world?.boss && !groupAlive(world.boss, g));
+          if (gone('lwing') && gone('rwing')) award('wave-10');
+        }
         break;
+      }
       case 'y': {
         const [i, p] = a;
         renderer.partLunge(i, p % C.W, Math.floor(p / C.W), now);
@@ -994,6 +1002,8 @@ async function boot() {
         break;
       }
       case 'W':
+        if (a[0] === 1) wingsBroken.clear();
+        if (a[0] >= 10) award('wave-5');
         if (a[0] === 1) {
           setMusic('war');
           tip('turn', 'Your move: every piece can move once');

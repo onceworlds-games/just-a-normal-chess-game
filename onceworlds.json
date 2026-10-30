@@ -83,13 +83,13 @@
     {
       "id": "wave-5",
       "name": "Holding the Line",
-      "description": "Clear wave 5.",
+      "description": "Reach turn 10.",
       "icon": "store/badge-wave-5.png"
     },
     {
       "id": "wave-10",
-      "name": "Ten Waves",
-      "description": "Clear all ten waves.",
+      "name": "Clipped Wings",
+      "description": "Break both of the dragon's wings.",
       "icon": "store/badge-wave-10.png"
     },
     {

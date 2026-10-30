@@ -229,11 +229,17 @@ function drawBadge(ctx, W, H, id) {
     }],
     'wave-5': ['#3d6b28', '#13240c', () => {
       drawPiece(ctx, 'r', 'w', W * 0.16, H * 0.14, W * 0.6);
-      label('5');
-    }],
-    'wave-10': ['#81b64c', '#1d3310', () => {
-      drawPiece(ctx, 'q', 'w', W * 0.12, H * 0.12, W * 0.64);
       label('10');
+    }],
+    'wave-10': ['#b0472f', '#2a0b06', () => {
+      // Two black rook wings, broken off and falling apart.
+      for (const [sx, rot] of [[-1, -0.55], [1, 0.55]]) {
+        ctx.save();
+        ctx.translate(W * (0.5 + sx * 0.2), H * 0.52);
+        ctx.rotate(rot);
+        drawPiece(ctx, 'r', 'd', -W * 0.24, -H * 0.3, W * 0.48);
+        ctx.restore();
+      }
     }],
     checkmate: ['#d6aa4a', '#3a2a0a', () => {
       ctx.save();
