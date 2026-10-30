@@ -1407,4 +1407,58 @@ async function boot() {
     state.camInit = jump === 'awaken';
     if (jump !== 'awaken') frameBoard(true);
   }
+
+  // ?auto (only outside Onceworlds): White plays itself at a watchable pace, for recording the game.
+  if (!ow && params.has('auto')) {
+    const { bestWhiteMove } = await import('./autopilot.js');
+    const pace = Number(params.get('pace')) || 1;
+    const opening = [[12, 28], [6, 21], [5, 26], [11, 19], [1, 18]]; // e4, Nf3, Bc4, d3, Nc3
+    let nextAt = performance.now() + 2500;
+    let moves = 0;
+    if (state.room.match.phase !== 'playing') setTimeout(() => state.room.startMatch(), 1800);
+    const tick = () => {
+      requestAnimationFrame(tick);
+      const sim = state.net?.sim;
+      if (!sim || performance.now() < nextAt) return;
+      if (sim.phase === 'chess' && sim.chess.pos.t === 'w') {
+        const pos = sim.chess.pos;
+        const caps = legalMoves(pos).filter((m) => m.c !== '.');
+        let m = caps[0];
+        if (!m) {
+          const [from, to] = opening[Math.min(opening.length - 1, Math.floor(sim.chess.ply / 2))] ?? [];
+          m = legalMoves(pos).find((mv) => mv.from === from && mv.to === to) ?? legalMoves(pos)[Math.floor(Math.random() * legalMoves(pos).length)];
+        }
+        if (m) {
+          state.chessSel = m.from;
+          setTimeout(() => {
+            state.chessSel = -1;
+            state.net.send({ t: 'cm', from: m.from, to: m.to, promo: 'q' });
+          }, 450 / pace);
+        }
+        nextAt = performance.now() + 1700 / pace;
+      } else if (sim.phase === 'battle' && sim.side === 'w' && !sim.done.has(0)) {
+        const pick = moves < 9 ? bestWhiteMove(sim, 0, { skill: 0.9 }) : null;
+        if (pick) {
+          state.sel = pick.p.id;
+          setTimeout(() => {
+            state.net.send({ t: 'mv', id: pick.p.id, x: pick.m.x, y: pick.m.y });
+            if (pick.m.o > 0) sfx.capture();
+            else if (pick.m.o < 0) sfx.hit();
+            else sfx.move();
+            state.sel = 0;
+          }, 380 / pace);
+          moves++;
+          nextAt = performance.now() + 760 / pace;
+        } else {
+          state.net.send({ t: 'end', on: true });
+          moves = 0;
+          nextAt = performance.now() + 900 / pace;
+        }
+      } else if (sim.phase === 'lost') {
+        state.net.send({ t: 'retry' });
+        nextAt = performance.now() + 3000;
+      } else nextAt = performance.now() + 200;
+    };
+    requestAnimationFrame(tick);
+  }
 }
