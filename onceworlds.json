@@ -1,0 +1,8 @@
+{
+  "slug": "just-a-normal-chess-game",
+  "name": "Just a Normal Chess Game",
+  "description": "A perfectly normal game of chess. Nothing strange happens. Solo or with up to 4 friends.",
+  "dir": "game",
+  "productionBranch": "main",
+  "genre": "Strategy"
+}

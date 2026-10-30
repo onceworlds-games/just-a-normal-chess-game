@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Just a Normal Chess Game</title>
+<style>
+html,body{margin:0;height:100%;background:#302e2b;display:grid;place-items:center}
+.b{display:grid;grid-template-columns:repeat(8,1fr);width:min(90vw,90vh);aspect-ratio:1}
+.b i{display:block}.b i:nth-child(16n+1),.b i:nth-child(16n+3),.b i:nth-child(16n+5),.b i:nth-child(16n+7),.b i:nth-child(16n+10),.b i:nth-child(16n+12),.b i:nth-child(16n+14),.b i:nth-child(16n+16){background:#ebecd0}
+.b i{background:#779556}
+</style>
+</head>
+<body><div class="b" id="b"></div>
+<script>for(let i=0;i<64;i++)document.getElementById('b').appendChild(document.createElement('i'))</script>
+</body>
+</html>
