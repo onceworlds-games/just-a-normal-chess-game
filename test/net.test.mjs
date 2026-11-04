@@ -86,11 +86,11 @@ test('a friend sees the host battle and moves their own pieces through it', asyn
   const a = createNet(null, ra, hooks);
   const b = createNet(null, rb, hooks);
   // The friend readies; the host's Play (which writes its lobby choices first) must still start the match.
-  assert.equal(a.start(), false, 'not before the friend is ready');
+  assert.equal(ra.canStart, false, 'not before the friend is ready');
   rb.setReady(true);
   a.setLobby({ resume: false });
   assert.ok(ra.canStart, 'Play does not un-ready the friend');
-  assert.ok(a.start());
+  ra.startMatch();
   await new Promise((r) => setTimeout(r, 0));
   a.update(0.05);
   assert.ok(a.sim, 'the host runs the game');
@@ -164,7 +164,7 @@ test('a friend who arrives mid-run is seated at the next wave break', async () =
   const ra = h.makeRoom('a');
   const hooks = { loadRun: async () => null, saveRun: () => {} };
   const a = createNet(null, ra, hooks);
-  a.start();
+  ra.startMatch();
   await new Promise((r) => setTimeout(r, 0));
   a.update(0.05);
   const pilot = createAutopilot(a.sim, 0, { seed: 4 });

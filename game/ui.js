@@ -144,11 +144,10 @@ export function createUI(handlers) {
 
 // ---------------------------------------------------------------- panel builders
 
-export function lobbyPanel(refs, { onDiff, onPlay, onReady, onContinue, onInvite }) {
+export function lobbyPanel(refs, { onDiff, onPlay, onContinue, onInvite }) {
   refs.seg = DIFF_KEYS.map((k) => h('button', { class: 'seg-b', 'data-k': k, onclick: () => onDiff(k) }, DIFFICULTY[k].label));
   refs.seats = h('div', { class: 'seats' });
   refs.play = h('button', { class: 'btn green big', onclick: () => onPlay() }, 'Play');
-  refs.ready = h('button', { class: 'btn green big', onclick: () => onReady() }, 'Ready');
   refs.cont = h('button', { class: 'btn grey', onclick: () => onContinue() }, 'Continue');
   refs.wait = h('div', { class: 'wait' });
   refs.onInvite = onInvite;
@@ -163,7 +162,7 @@ export function lobbyPanel(refs, { onDiff, onPlay, onReady, onContinue, onInvite
       h('div', { class: 'label' }, 'Team White'),
       refs.seats,
     ),
-    h('div', { class: 'pn-foot' }, refs.wait, refs.cont, refs.play, refs.ready),
+    h('div', { class: 'pn-foot' }, refs.wait, refs.cont, refs.play),
   );
 }
 

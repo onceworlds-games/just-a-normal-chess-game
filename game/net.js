@@ -29,6 +29,7 @@ export function stubRoom() {
     spectators: [],
     spectating: false,
     canStart: true,
+    stub: true,
     allReady: true,
     notReady: [],
     get running() {
@@ -134,13 +135,6 @@ export function createNet(ow, room, hooks) {
   };
 
   // ---------------------------------------------------------------- starting and adopting
-
-  net.start = () => {
-    if (!room.isHost || room.match.phase !== 'lobby') return false;
-    if (!room.canStart) return false;
-    room.startMatch({ countdown: 0, open: true });
-    return true;
-  };
 
   async function beginAsHost(match) {
     const ids = [room.host, ...(match.participants ?? []).filter((id) => id !== room.host)].filter((id) => room.players.has(id) || id === room.me.id);
@@ -280,6 +274,7 @@ export function createNet(ow, room, hooks) {
     hooks.onState?.(key);
   });
   room.on('matchstart', () => {
+    if (room.isHost) room.open?.(true); // friends can still drop in while it plays
     drop();
     adopt();
     hooks.onMatch?.();

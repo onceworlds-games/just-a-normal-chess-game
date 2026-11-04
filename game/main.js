@@ -38,7 +38,7 @@ else boot().catch((err) => console.error(err));
 async function joinRoom() {
   if (!ow?.rooms) return stubRoom();
   try {
-    return await ow.rooms.join({ private: true, maxPlayers: 4, minPlayers: 1, lobby: 'game' });
+    return await ow.rooms.join({ private: true, maxPlayers: 4, minPlayers: 1, lobby: 'bar' });
   } catch (err) {
     console.warn('[chess] join failed, playing alone', err);
     return stubRoom();
@@ -603,23 +603,13 @@ async function boot() {
         },
         onPlay: () => {
           startAudio();
-          if (!state.room.isHost) return;
-          state.net.setLobby({ resume: false });
-          if (!state.net.start()) sfx.illegal();
-          else sfx.start();
-        },
-        onReady: () => {
-          startAudio();
-          state.room.setReady(!state.room.me.ready);
-          sfx.ui();
+          if (state.room.stub) state.room.startMatch(); // no platform: the page runs alone
         },
         onContinue: () => {
           startAudio();
           if (!state.room.isHost || !state.save) return;
-          state.net.setLobby({ resume: true });
-          setTimeout(() => {
-            if (!state.net.start()) sfx.illegal();
-          }, 60);
+          state.net.setLobby({ resume: !state.net.lobby().resume });
+          sfx.ui();
         },
         onInvite: () => {
           try {
@@ -635,16 +625,15 @@ async function boot() {
     }
     const isHost = room.isHost;
     const watching = room.match?.phase === 'playing' && room.spectating;
-    r.play.hidden = !isHost || watching;
-    r.ready.hidden = isHost || watching;
-    r.ready.textContent = room.me.ready ? 'Not ready' : 'Ready';
-    r.ready.classList.toggle('grey', !!room.me.ready);
-    r.ready.classList.toggle('green', !room.me.ready);
-    const waitingFor = (room.notReady ?? []).map((id) => room.players.get(id)?.name).filter(Boolean);
-    r.play.disabled = !room.canStart;
-    ui.set(r.wait, watching ? 'Watching · you join on White\'s next turn' : isHost ? (waitingFor.length ? `Waiting for ${waitingFor.slice(0, 2).join(', ')}` : '') : 'Waiting for the host');
+    r.play.hidden = !room.stub || watching;
+    ui.set(r.wait, watching ? 'Watching · you join on White\'s next turn' : '');
     r.cont.hidden = !(isHost && state.save && state.save.ck && !watching);
-    if (!r.cont.hidden) ui.set(r.cont, `Continue · Turn ${state.save.turn ?? 1}`);
+    if (!r.cont.hidden) {
+      const resume = state.net.lobby().resume;
+      ui.set(r.cont, `${resume ? 'Resuming' : 'Resume saved game'} · Turn ${state.save.turn ?? 1}`);
+      r.cont.classList.toggle('green', resume);
+      r.cont.classList.toggle('grey', !resume);
+    }
     // Seats, the host first.
     const key = [...room.players.values()].map((p) => `${p.id}:${p.name}:${p.ready ? 1 : 0}:${p.connected === false ? 0 : 1}:${avatarCache.get(p.id) ?? ''}`).join('|') + room.host;
     if (r.seats.dataset.key !== key) {
