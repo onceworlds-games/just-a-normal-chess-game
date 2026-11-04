@@ -274,7 +274,6 @@ export function createNet(ow, room, hooks) {
     hooks.onState?.(key);
   });
   room.on('matchstart', () => {
-    if (room.isHost) room.open?.(true); // friends can still drop in while it plays
     drop();
     adopt();
     hooks.onMatch?.();
